@@ -25,9 +25,30 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	@Override
 	public void renderTileEntityAt(TileEntity tileentity, double x, double y, double z, float f) {
 		TileEntityCore te = (TileEntityCore) tileentity;
-		int metadata = te.blockMetadata % 3;
+		int metadata = te.blockMetadata;
+		
+		float rx = 0;
+		float ry = 0;
+		float rz = 0;
 		
 		switch(metadata){
+		case 0:
+			break;
+		case 1:
+			break;
+		case 2:
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		case 6:
+			break;
+		}
+		
+		switch(te.getType()){
 		case 0:
 			texture = texture_empty;
 			break;
@@ -46,6 +67,7 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			
 			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture);
 			GL11.glTranslated(x, y, z);
+	        GL11.glTranslated(0, 0, 1);
 			model.renderAll();
 			
 		GL11.glPopMatrix();
@@ -60,7 +82,18 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	}
 
 	public void renderItem(ItemRenderType type, ItemStack item, Object... data) {
-		//FIXME
+		switch(type){
+		case ENTITY:
+			return;
+		case EQUIPPED:
+			return;
+		case EQUIPPED_FIRST_PERSON:
+			return;
+		case FIRST_PERSON_MAP:
+			return;
+		case INVENTORY:
+			return;
+		}
 	}
 	
 }

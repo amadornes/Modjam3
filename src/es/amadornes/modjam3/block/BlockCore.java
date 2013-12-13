@@ -8,6 +8,7 @@ import net.minecraft.util.Icon;
 import net.minecraft.world.World;
 import es.amadornes.modjam3.lib.ModInfo;
 import es.amadornes.modjam3.proxy.ClientProxy;
+import es.amadornes.modjam3.tileentity.TileEntityCore;
 
 public class BlockCore extends Block {
 	
@@ -17,10 +18,15 @@ public class BlockCore extends Block {
 		setHardness(10F);
 		setResistance(10F);
 	}
+	
+	@Override
+	public boolean hasTileEntity(int metadata) {
+		return true;
+	}
 
 	@Override
 	public TileEntity createTileEntity(World world, int metadata) {
-		return null;
+		return new TileEntityCore();
 	}
 	
 	@Override
@@ -50,6 +56,16 @@ public class BlockCore extends Block {
 	@Override
 	public int getRenderType() {
 		return ClientProxy.renderIDCore;
+	}
+	
+	@Override
+	public int getDamageValue(World w, int x, int y, int z) {
+		return 0;
+	}
+	
+	@Override
+	public int onBlockPlaced(World w, int x, int y, int z, int meta, float par6, float par7, float par8, int par9) {
+		return meta;
 	}
 	
 }
