@@ -60,24 +60,25 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			break;
 		}
 		
-		switch(te.getType()){
+		int type = te.getType();
+		
+		switch(type){
 		case 0:
-			texture = texture_empty;
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
 			break;
 		case 1:
-			texture = texture_items;
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_items);
 			break;
 		case 2:
-			texture = texture_fluids;
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_fluids);
 			break;
 		default:
-			texture = texture_empty;
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
 			break;
 		}
 		
 		GL11.glPushMatrix();
 			
-			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture);
 			GL11.glTranslated(x, y, z);
 	        GL11.glTranslated(0, 0, 1);
 	        GL11.glTranslated(tx, ty, tz);

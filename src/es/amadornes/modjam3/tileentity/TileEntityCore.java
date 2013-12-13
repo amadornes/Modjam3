@@ -1,10 +1,5 @@
 package es.amadornes.modjam3.tileentity;
 
-import java.util.Random;
-
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.PacketDispatcher;
-import cpw.mods.fml.relauncher.Side;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
@@ -19,6 +14,9 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.PacketDispatcher;
+import cpw.mods.fml.relauncher.Side;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
 	
@@ -46,10 +44,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public int getType(){
-		if(tank.getFluidAmount() > 0)
-			return 2;
 		if(item != null)
 			return 1;
+		if(tank.getFluidAmount() > 0)
+			return 2;
 		return 0;
 	}
 	
@@ -59,9 +57,11 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	@Override
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
-			if(tick%4 == 0){
-				PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
-			}
+			if(tick%5 == 0){
+				//PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
+				PacketDispatcher.sendPacketToAllPlayers(getDescriptionPacket());
+				//System.out.println("Sent");
+			}/*
 			if(tick == needed){
 				double minticks = 15;
 				minticks -= OCmodules * OCmultiplier;
@@ -69,17 +69,16 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				needed = mticks + new Random().nextInt(mticks);
 				
 				
-			}
+			}*/
 			tick++;
 		}
 	}
 	
 	@Override
 	public Packet getDescriptionPacket() {
-		Packet132TileEntityData packet = new Packet132TileEntityData();
-		packet.data = new NBTTagCompound();
-		writeToNBT(packet.data);
-		return packet;
+		NBTTagCompound data = new NBTTagCompound();
+		writeToNBT(data);
+		return new Packet132TileEntityData(xCoord, yCoord, zCoord, 0, data);
 	}
 	
 	@Override
@@ -188,34 +187,44 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canInsertItem(int i, ItemStack itemstack, int j) {
-		int oppositemeta = ForgeDirection.getOrientation(j).getOpposite().ordinal();
-		return (canAcceptStuff() || itemstack.isItemEqual(item)) && oppositemeta == blockMetadata;
+		ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
+		boolean can = (item == null || (itemstack.isItemEqual(item) && itemstack.stackSize < itemstack.getMaxStackSize())) && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
+		System.out.println(can);
+		return can;
 	}
 
 	public boolean canExtractItem(int i, ItemStack itemstack, int j) {
-		return item != null;
+		ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
+		return item != null && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
 	}
 
 	public int fill(ForgeDirection from, FluidStack resource, boolean doFill) {
-		if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
-			if(tank.getFluid() == null || tank.getFluidAmount() > 0 || resource.getFluid().equals(tank.getFluid().getFluid())){
-				
+		if(canFill(from, resource.getFluid())){
+			if(tank.getFluid() == null || resource.getFluid().equals(tank.getFluid().getFluid())){
+				int filled = Math.min(tank.getCapacity() - tank.getFluidAmount(), resource.amount);
+				if(doFill){
+					FluidStack fs = new FluidStack(resource.getFluid(), tank.getFluidAmount() + filled);
+					tank.setFluid(fs);
+				}
+				return filled;
 			}
 		}
 		return 0;
 	}
 
 	public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain) {
+		//FIXME
 		return null;
 	}
 
 	public FluidStack drain(ForgeDirection from, int maxDrain, boolean doDrain) {
+		//FIXME
 		return null;
 	}
 
 	public boolean canFill(ForgeDirection from, Fluid fluid) {
 		if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
-			if(tank.getFluid() == null || tank.getFluidAmount() == 0 || tank.getFluid().getFluid().equals(fluid)){
+			if(tank.getFluid() == null || tank.getFluidAmount() == 0 || (tank.getFluid().getFluid().equals(fluid) && tank.getFluidAmount() < tank.getCapacity())){
 				return true;
 			}
 		}
