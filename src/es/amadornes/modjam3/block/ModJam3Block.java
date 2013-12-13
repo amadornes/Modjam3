@@ -2,6 +2,7 @@ package es.amadornes.modjam3.block;
 
 import java.util.List;
 
+import es.amadornes.modjam3.lib.ModInfo;
 import es.amadornes.modjam3.proxy.ClientProxy;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -16,6 +17,7 @@ public class ModJam3Block extends Block {
 	
 	public ModJam3Block(int id) {
 		super(id, Material.iron);
+		setUnlocalizedName(ModInfo.MOD_ID + ".modjam3block");
 	}
 	
 	@Override
@@ -28,18 +30,61 @@ public class ModJam3Block extends Block {
 
 	@Override
 	public TileEntity createTileEntity(World world, int metadata) {
+		if(metadata >= 0 && metadata < 6){
+			return null;
+		}
 		switch(metadata){
-		case 0:
+		case 6:
 			return null;
-		case 1:
+		case 7:
 			return null;
-		case 2:
-			return null;
-		case 3:
+		case 8:
 			return null;
 		}
 		
 		return null;
+	}
+	
+	@Override
+	public int damageDropped(int metadata) {
+		if(metadata >= 0 && metadata < 6){
+			return 0;
+		}
+		return metadata;
+	}
+	
+	@Override
+	public float getBlockHardness(World w, int x, int y, int z) {
+		int metadata = w.getBlockMetadata(x, y, z);
+		if(metadata >= 0 && metadata < 6){
+			return 10F;
+		}
+		switch(metadata){
+		case 6:
+			return 10F;
+		case 7:
+			return 10F;
+		case 8:
+			return 10F;
+		}
+		return 0;
+	}
+	
+	@Override
+	public float getExplosionResistance(Entity par1Entity, World world, int x, int y, int z, double explosionX, double explosionY, double explosionZ) {
+		int metadata = world.getBlockMetadata(x, y, z);
+		if(metadata >= 0 && metadata < 6){
+			return 10F;
+		}
+		switch(metadata){
+		case 6:
+			return 10F;
+		case 7:
+			return 10F;
+		case 8:
+			return 10F;
+		}
+		return 0;
 	}
 	
 	@Override
