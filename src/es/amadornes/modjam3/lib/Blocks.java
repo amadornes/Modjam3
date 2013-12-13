@@ -1,9 +1,9 @@
 package es.amadornes.modjam3.lib;
 
-import es.amadornes.modjam3.block.ModJam3Block;
+import es.amadornes.modjam3.block.BlockCore;
 
 public class Blocks {
 
-	public static ModJam3Block modJam3Block;
+	public static BlockCore core;
 	
 }

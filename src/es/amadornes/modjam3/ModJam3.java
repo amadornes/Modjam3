@@ -11,7 +11,7 @@ import cpw.mods.fml.common.network.NetworkMod;
 import es.amadornes.modjam3.lib.ModInfo;
 import es.amadornes.modjam3.proxy.CommonProxy;
 
-@Mod(modid = ModInfo.MOD_ID, name = ModInfo.NAME, version = ModInfo.VERSION, modLanguage = "java")
+@Mod(modid = ModInfo.MOD_ID, name = ModInfo.NAME, version = ModInfo.VERSION)
 @NetworkMod(clientSideRequired = true, serverSideRequired = false, channels = {ModInfo.NAME})
 public class ModJam3 {
 	
@@ -28,7 +28,15 @@ public class ModJam3 {
 	
 	@EventHandler
 	public void init(FMLInitializationEvent ev){
+		proxy.assignIds();
 		
+		proxy.registerBlocks();
+		proxy.registerTileEntities();
+		proxy.registerItems();
+		
+		proxy.registerLanguages();
+		
+		proxy.registerRenders();
 	}
 	
 	@EventHandler

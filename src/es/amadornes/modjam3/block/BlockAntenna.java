@@ -2,18 +2,16 @@ package es.amadornes.modjam3.block;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Icon;
 import net.minecraft.world.World;
 import es.amadornes.modjam3.lib.ModInfo;
 import es.amadornes.modjam3.proxy.ClientProxy;
 
-public class BlockCore extends Block {
+public class BlockAntenna extends Block {
 	
-	public BlockCore(int id) {
+	public BlockAntenna(int id) {
 		super(id, Material.iron);
-		setUnlocalizedName(ModInfo.MOD_ID + ".core");
+		setUnlocalizedName(ModInfo.MOD_ID + ".antenna");
 		setHardness(10F);
 		setResistance(10F);
 	}
@@ -36,15 +34,6 @@ public class BlockCore extends Block {
 	@Override
 	public boolean isOpaqueCube() {
 		return false;
-	}
-	
-	@Override
-	public Icon getIcon(int meta, int side) {
-		if(Minecraft.getMinecraft().gameSettings.fancyGraphics)
-			return null;
-		
-		//FIXME return icon if needed
-		return null;
 	}
 	
 	@Override
