@@ -20,6 +20,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.relauncher.Side;
 import es.amadornes.modjam3.lib.Blocks;
+import es.amadornes.modjam3.lib.Items;
 import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
@@ -28,13 +29,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private ItemStack item;
 	
 	private boolean isInput = true;
-	
-	
-	public boolean canAcceptStuff(){
-		if(tank.getFluidAmount() > 0 || item != null)
-			return false;
-		return true;
-	}
 	
 	public boolean canAddOverclocker(){
 		if(OCmodules < 4)
@@ -200,6 +194,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(isInput){
 			item = itemstack;
 			onInventoryChanged();
+			System.out.println("Set");
 		}
 	}
 
@@ -216,7 +211,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean isUseableByPlayer(EntityPlayer entityplayer) {
-		return !isInput;
+		return true;
 	}
 
 	public void openChest() {
@@ -227,19 +222,40 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean isItemValidForSlot(int i, ItemStack itemstack) {
-		return canAcceptStuff();
+		return canInsertItem(i, itemstack, (blockMetadata + 1)%6);
 	}
 
 	public int[] getAccessibleSlotsFromSide(int side) {
-		return new int[]{side};
+		ForgeDirection oppositeDirection = ForgeDirection.getOrientation(side).getOpposite();
+		if(oppositeDirection == ForgeDirection.getOrientation(blockMetadata)){
+			return new int[]{0};
+		}
+		return new int[]{};
 	}
 
 	public boolean canInsertItem(int i, ItemStack itemstack, int j) {
 		if(isInput){
+			System.out.println("Input");
 			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
-			boolean can = (item == null || (itemstack.isItemEqual(item) && itemstack.stackSize < itemstack.getMaxStackSize())) && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
-			System.out.println(can);
-			return can;
+			if(oppositeDirection == ForgeDirection.getOrientation(blockMetadata)){
+				System.out.println("Opposite");
+				if(tank.getFluidAmount() == 0){
+					System.out.println("Empty");
+					if(item == null){
+						System.out.println("Empty slot");
+						return true;
+					}else{
+						System.out.println("Not empty slot");
+						if(item.isItemEqual(itemstack)){
+							System.out.println("Equals");
+							if(item.stackSize + itemstack.stackSize <= item.getMaxStackSize()){
+								System.out.println("Addable");
+								return true;
+							}
+						}
+					}
+				}
+			}
 		}
 		return false;
 	}
@@ -340,12 +356,15 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private ForgeDirection[] determineUpgradableFaces(){
 		switch(blockMetadata){
 		case 0:
+			return new ForgeDirection[]{ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.NORTH, ForgeDirection.SOUTH};
 		case 1:
 			return new ForgeDirection[]{ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.NORTH, ForgeDirection.SOUTH};
 		case 2:
+			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.EAST, ForgeDirection.WEST};
 		case 3:
 			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.EAST, ForgeDirection.WEST};
 		case 4:
+			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.NORTH, ForgeDirection.SOUTH};
 		case 5:
 			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.NORTH, ForgeDirection.SOUTH};
 		}
@@ -386,6 +405,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		tag.setInteger("internalAntennas", internalAntennas);
 		tag.setInteger("OCmodules", OCmodules);
 		
+		for(int i = 0; i < upgrades.length; i++){
+			if(upgrades[i] == null){
+				tag.setInteger("upgrade" + i, -1);
+			}else{
+				tag.setInteger("upgrade" + i, upgrades[i].ordinal());
+			}
+		}
+		
 		t.setTag("upgrades", tag);
 	}
 	
@@ -395,6 +422,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		isHV = tag.getBoolean("isHV");
 		internalAntennas = tag.getInteger("internalAntennas");
 		OCmodules = tag.getInteger("OCmodules");
+		
+		for(int i = 0; i < upgrades.length; i++){
+			UpgradeType type = null;
+			if(tag.getInteger("upgrade" + i) >= 0){
+				type = UpgradeType.values()[tag.getInteger("upgrade" + i)];
+			}
+			upgrades[i] = type;
+		}
 	}
 	
 	public boolean installUpgrade(UpgradeType type, ForgeDirection face){
@@ -415,6 +450,34 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			}
 		}
 		return false;
+	}
+	
+	public void setUpgrade(UpgradeType type, ForgeDirection face){
+		int id = 0;
+		for(ForgeDirection dir : determineUpgradableFaces()){
+			if(dir == face)
+				break;
+			id++;
+		}
+		if(upgrades[id] == null){
+			upgrades[id] = type;
+		}
+	}
+	
+	public void removeUpgrade(ForgeDirection face){
+		int id = 0;
+		for(ForgeDirection dir : determineUpgradableFaces()){
+			if(dir == face)
+				break;
+			id++;
+		}
+		upgrades[id] = null;
+	}
+	
+	public ItemStack getUpgradeItemStack(int upgrade){
+		if(upgrades[upgrade] == null)
+			return null;
+		return new ItemStack(Items.upgrade, 1, upgrades[upgrade].ordinal());
 	}
 	
 	public static enum UpgradeType{

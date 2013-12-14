@@ -1,5 +1,9 @@
 package es.amadornes.modjam3.render;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -9,6 +13,7 @@ import net.minecraftforge.client.model.AdvancedModelLoader;
 import net.minecraftforge.client.model.IModelCustom;
 
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import es.amadornes.modjam3.lib.ModInfo;
@@ -20,6 +25,8 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	private ResourceLocation texture_empty = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_empty.png");
 	private ResourceLocation texture_items = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_items.png");
 	private ResourceLocation texture_fluids = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_fluids.png");
+	
+	private int lastAnimationTick = 0;
 	
 	@Override
 	public void renderTileEntityAt(TileEntity tileentity, double x, double y, double z, float f) {
@@ -86,7 +93,160 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	        GL11.glRotated(rz, 0, 0, 1);
 			model.renderAll();
 			
+			//System.out.println(te.getUpgradeItemStack(0) + " - " + te.getUpgradeItemStack(1) + " - " + te.getUpgradeItemStack(2) + " - " + te.getUpgradeItemStack(3));
+			
+			if(te.blockMetadata == 0 || te.blockMetadata == 1){
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -1.7);
+					renderItem(te.getUpgradeItemStack(0));
+				GL11.glPopMatrix();
+				
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -0.2);
+					renderItem(te.getUpgradeItemStack(1));
+				GL11.glPopMatrix();
+				
+				if(te.blockMetadata == 0){
+					GL11.glPushMatrix();
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(0.5, 0.5, -0.2);
+						renderItem(te.getUpgradeItemStack(3));
+					GL11.glPopMatrix();
+					
+					GL11.glPushMatrix();
+						GL11.glRotated(180, 0, 1, 0);
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(-1.5, 0.5, 1.8);
+						renderItem(te.getUpgradeItemStack(2));
+					GL11.glPopMatrix();
+				}else{
+					GL11.glPushMatrix();
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(0.5, 0.5, -0.2);
+						renderItem(te.getUpgradeItemStack(2));
+					GL11.glPopMatrix();
+					
+					GL11.glPushMatrix();
+						GL11.glRotated(180, 0, 1, 0);
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(-1.5, 0.5, 1.8);
+						renderItem(te.getUpgradeItemStack(3));
+					GL11.glPopMatrix();
+				}
+				
+			}else if(te.blockMetadata == 2 || te.blockMetadata == 3){
+				if(te.blockMetadata == 2){
+					GL11.glPushMatrix();
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(0.5, 0.5, -0.2);
+						renderItem(te.getUpgradeItemStack(1));
+					GL11.glPopMatrix();
+					
+					GL11.glPushMatrix();
+						GL11.glRotated(180, 0, 1, 0);
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(-1.5, 0.5, 1.8);
+						renderItem(te.getUpgradeItemStack(0));
+					GL11.glPopMatrix();
+				}else{
+					GL11.glPushMatrix();
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(0.5, 0.5, -0.2);
+						renderItem(te.getUpgradeItemStack(0));
+					GL11.glPopMatrix();
+					
+					GL11.glPushMatrix();
+						GL11.glRotated(180, 0, 1, 0);
+						GL11.glScaled(0.5, 0.5, 0.5);
+						GL11.glTranslated(-1.5, 0.5, 1.8);
+						renderItem(te.getUpgradeItemStack(1));
+					GL11.glPopMatrix();
+				}
+				
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -1.7);
+					renderItem(te.getUpgradeItemStack(2));
+				GL11.glPopMatrix();
+				
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -0.2);
+					renderItem(te.getUpgradeItemStack(3));
+				GL11.glPopMatrix();
+		}else if(te.blockMetadata == 4 || te.blockMetadata == 5){
+			if(te.blockMetadata == 4){
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -1.7);
+					renderItem(te.getUpgradeItemStack(1));
+				GL11.glPopMatrix();
+				
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -0.2);
+					renderItem(te.getUpgradeItemStack(0));
+				GL11.glPopMatrix();
+			}else{
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -1.7);
+					renderItem(te.getUpgradeItemStack(0));
+				GL11.glPopMatrix();
+				
+				GL11.glPushMatrix();
+					GL11.glRotated(-90, 0, 1, 0);
+					GL11.glScaled(0.5, 0.5, 0.5);
+					GL11.glTranslated(-1.5, 0.5, -0.2);
+					renderItem(te.getUpgradeItemStack(1));
+				GL11.glPopMatrix();
+			}
+			
+			GL11.glPushMatrix();
+				GL11.glScaled(0.5, 0.5, 0.5);
+				GL11.glTranslated(0.5, 0.5, -0.2);
+				renderItem(te.getUpgradeItemStack(3));
+			GL11.glPopMatrix();
+			
+			GL11.glPushMatrix();
+				GL11.glRotated(180, 0, 1, 0);
+				GL11.glScaled(0.5, 0.5, 0.5);
+				GL11.glTranslated(-1.5, 0.5, 1.8);
+				renderItem(te.getUpgradeItemStack(2));
+			GL11.glPopMatrix();
+		}
+			
 		GL11.glPopMatrix();
+	}
+	
+	private void renderItem(ItemStack item){
+		if(item != null){
+			float divider = 8F;
+			
+			TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
+			
+			texturemanager.bindTexture(texturemanager.getResourceLocation(item.getItemSpriteNumber()));
+            Tessellator tessellator = Tessellator.instance;
+            float f = item.getIconIndex().getMinU();
+            float f1 = item.getIconIndex().getMaxU();
+            float f2 = item.getIconIndex().getMinV();
+            float f3 = item.getIconIndex().getMaxV();
+            GL11.glEnable(GL12.GL_RESCALE_NORMAL);
+            ItemRenderer.renderItemIn2D(tessellator, f1, f2, f, f3, item.getIconIndex().getIconWidth(), item.getIconIndex().getIconHeight(), 0.0625F);
+	        
+	        lastAnimationTick++;
+	        if(lastAnimationTick == 16 * divider)
+	        	lastAnimationTick = 0;
+		}
 	}
 
 	public boolean handleRenderType(ItemStack item, ItemRenderType type) {
