@@ -29,28 +29,37 @@ public class Vector3 {
 		return w != null;
 	}
 	
-	public void add(double x, double y, double z){
+	public Vector3 add(double x, double y, double z){
 		this.x += x;
 		this.y += y;
 		this.z += z;
+		return this;
 	}
 	
-	public void add(ForgeDirection dir){
+	public Vector3 add(ForgeDirection dir){
 		this.x += dir.offsetX;
 		this.y += dir.offsetY;
 		this.z += dir.offsetZ;
+		return this;
 	}
 	
-	public void subtract(double x, double y, double z){
+	public Vector3 subtract(double x, double y, double z){
 		this.x -= x;
 		this.y -= y;
 		this.z -= z;
+		return this;
 	}
 	
-	public void subtract(ForgeDirection dir){
-		this.x -= dir.offsetX;
-		this.y -= dir.offsetY;
-		this.z -= dir.offsetZ;
+	public Vector3 getRelative(double x, double y, double z){
+		return clone().add(x, y, z);
+	}
+	
+	public Vector3 getRelative(ForgeDirection dir){
+		return getRelative(dir.offsetX, dir.offsetY, dir.offsetZ);
+	}
+	
+	public Vector3 clone(){
+		return new Vector3(x, y, z, w);
 	}
 	
 	public boolean hasTileEntity(){
@@ -106,6 +115,27 @@ public class Vector3 {
 	
 	public double getZ() {
 		return z;
+	}
+	
+	public int getBlockX() {
+		return (int)x;
+	}
+	
+	public int getBlockY() {
+		return (int)y;
+	}
+	
+	public int getBlockZ() {
+		return (int)z;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof Vector3){
+			Vector3 vec = (Vector3) obj;
+			return vec.w == w && vec.x == x && vec.y == y && vec.z == z; 
+		}
+		return false;
 	}
 
 }
