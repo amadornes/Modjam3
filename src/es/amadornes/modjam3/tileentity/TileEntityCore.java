@@ -25,7 +25,7 @@ import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
 	
-	private FluidTank tank = new FluidTank(1000);
+	private FluidTank tank = new FluidTank(8000);
 	private ItemStack item;
 	
 	private boolean isInput = true;
@@ -235,21 +235,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 
 	public boolean canInsertItem(int i, ItemStack itemstack, int j) {
 		if(isInput){
-			System.out.println("Input");
 			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
 			if(oppositeDirection == ForgeDirection.getOrientation(blockMetadata)){
-				System.out.println("Opposite");
 				if(tank.getFluidAmount() == 0){
-					System.out.println("Empty");
 					if(item == null){
-						System.out.println("Empty slot");
 						return true;
 					}else{
-						System.out.println("Not empty slot");
 						if(item.isItemEqual(itemstack)){
-							System.out.println("Equals");
 							if(item.stackSize + itemstack.stackSize <= item.getMaxStackSize()){
-								System.out.println("Addable");
 								return true;
 							}
 						}
@@ -273,8 +266,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			if(tank.getFluid() == null || resource.getFluid().equals(tank.getFluid().getFluid())){
 				int filled = Math.min(tank.getCapacity() - tank.getFluidAmount(), resource.amount);
 				if(doFill){
-					FluidStack fs = new FluidStack(resource.getFluid(), tank.getFluidAmount() + filled);
-					tank.setFluid(fs);
+					tank.fill(new FluidStack(resource.getFluid(), filled), true);
 				}
 				return filled;
 			}
@@ -283,12 +275,34 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain) {
-		//FIXME
+		if(!isInput){
+			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
+				if(tank.getFluidAmount() > 0){
+					if(tank.getFluid().getFluid().equals(resource.getFluid())){
+						FluidStack fs = new FluidStack(tank.getFluid().getFluid(), Math.min(50, Math.min(resource.amount, tank.getFluidAmount())));
+						if(doDrain){
+							tank.drain(resource.amount, true);
+						}
+						return fs;
+					}
+				}
+			}
+		}
 		return null;
 	}
 
 	public FluidStack drain(ForgeDirection from, int maxDrain, boolean doDrain) {
-		//FIXME
+		if(!isInput){
+			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
+				if(tank.getFluidAmount() > 0){
+					FluidStack fs = new FluidStack(tank.getFluid().getFluid(), Math.min(50, Math.min(maxDrain, tank.getFluidAmount())));
+					if(doDrain){
+						tank.drain(maxDrain, true);
+					}
+					return fs;
+				}
+			}
+		}
 		return null;
 	}
 
@@ -321,23 +335,12 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public boolean hasAntenna(){
-		return internalAntennas > 0 || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna);
+		return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna);
 	}
 	
 	public int getAntennaRange(){
-		return internalAntennas*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
+		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	/*
 	 * 
@@ -384,14 +387,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		return false;
 	}
 	
-	private boolean isHV = false;
-	
-	private int internalAntennas = 0;
-	private int maxInternalAntennas = 4;
-	
 	private int OCmultiplier = 4;//Tick multiplier
 	private int OCmodules = 0;//Amount of OC modules installed
-	private int maxOCmodules = 4;
 	
 	private int defaultItems = 1;
 	private int defaultFluid = 10;
@@ -401,8 +398,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private void writeUpgradesToNBT(NBTTagCompound t){
 		NBTTagCompound tag = new NBTTagCompound();
 		
-		tag.setBoolean("isHV", isHV);
-		tag.setInteger("internalAntennas", internalAntennas);
 		tag.setInteger("OCmodules", OCmodules);
 		
 		for(int i = 0; i < upgrades.length; i++){
@@ -419,8 +414,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private void readUpgradesFromNBT(NBTTagCompound t){
 		NBTTagCompound tag = t.getCompoundTag("upgrades");
 		
-		isHV = tag.getBoolean("isHV");
-		internalAntennas = tag.getInteger("internalAntennas");
 		OCmodules = tag.getInteger("OCmodules");
 		
 		for(int i = 0; i < upgrades.length; i++){
@@ -436,20 +429,35 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(isFaceUpgradable(face)){
 			switch(type){
 			case OVERCLOCKER:
-				if(OCmodules < maxOCmodules)
-					return true;
-				return false;
+				return true;
 			case INTERNAL_ANTENNA:
-				if(internalAntennas < maxInternalAntennas)
+				return true;
+			case HV:
+				if(!hasUpgrade(UpgradeType.HV))
 					return true;
 				return false;
-			case HV:
-				if(!isHV)
-					return true;
+			default:
 				return false;
 			}
 		}
 		return false;
+	}
+	
+	public boolean hasUpgrade(UpgradeType type){
+		for(int i = 0; i < upgrades.length; i++){
+			if(upgrades[i] == type)
+				return true;
+		}
+		return false;
+	}
+	
+	public int getUpgradeAmount(UpgradeType type){
+		int amount = 0;
+		for(int i = 0; i < upgrades.length; i++){
+			if(upgrades[i] == type)
+				amount++;
+		}
+		return amount;
 	}
 	
 	public void setUpgrade(UpgradeType type, ForgeDirection face){
@@ -481,6 +489,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public static enum UpgradeType{
+		EMPTY,
 		OVERCLOCKER,
 		INTERNAL_ANTENNA,
 		HV;
