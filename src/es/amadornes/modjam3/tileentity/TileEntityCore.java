@@ -1,5 +1,7 @@
 package es.amadornes.modjam3.tileentity;
 
+import java.util.Random;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
@@ -23,8 +25,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private FluidTank tank = new FluidTank(1000);
 	private ItemStack item;
 	
-	private int OCmultiplier = 4;
-	private int OCmodules = 0;
+	private int OCmultiplier = 4;//Tick multiplier
+	private int OCmodules = 0;//Amount of OC modules installed
 	
 	private int defaultItems = 1;
 	private int defaultFluid = 10;
@@ -51,6 +53,36 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		return 0;
 	}
 	
+	public int getTransferrableItems(){
+		if(item != null){
+			return Math.min(item.stackSize, getMaxTransferrableItems());
+		}
+		return 0;
+	}
+	
+	public int getMaxTransferrableItems(){
+		if(item != null){
+			double proportion = Math.min(defaultItems + itemsPerOC*OCmodules, 64);
+			proportion /= 64;
+			return (int) Math.floor(Math.min(proportion * item.getMaxStackSize(), item.getMaxStackSize()));
+		}
+		return 0;
+	}
+	
+	public int getTransferrableMilibuckets(){
+		if(tank.getFluidAmount() > 0){
+			return Math.min(tank.getFluidAmount(), getMaxTransferrableMilibuckets());
+		}
+		return 0;
+	}
+	
+	public int getMaxTransferrableMilibuckets(){
+		if(tank.getFluidAmount() > 0){
+			return defaultFluid + fluidPerOC*OCmodules;
+		}
+		return 0;
+	}
+	
 	private int tick = 0;
 	private int needed = 0;
 	
@@ -58,19 +90,31 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
 			if(tick%5 == 0){
-				//PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
-				PacketDispatcher.sendPacketToAllPlayers(getDescriptionPacket());
-				//System.out.println("Sent");
-			}/*
+				PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
+			}
 			if(tick == needed){
 				double minticks = 15;
 				minticks -= OCmodules * OCmultiplier;
 				int mticks = (int) Math.max(0, Math.floor(minticks));
 				needed = mticks + new Random().nextInt(mticks);
+				tick = 0;
 				
-				
-			}*/
+				send();
+			}
 			tick++;
+		}
+	}
+	
+	private void send(){
+		switch(getType()){
+		case 1://Items
+			
+			
+			return;
+		case 2://Fluids
+			
+			
+			return;
 		}
 	}
 	

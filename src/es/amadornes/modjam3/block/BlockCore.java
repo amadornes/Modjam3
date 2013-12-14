@@ -1,8 +1,7 @@
 package es.amadornes.modjam3.block;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
-import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Icon;
 import net.minecraft.world.World;
@@ -10,7 +9,7 @@ import es.amadornes.modjam3.lib.ModInfo;
 import es.amadornes.modjam3.proxy.ClientProxy;
 import es.amadornes.modjam3.tileentity.TileEntityCore;
 
-public class BlockCore extends Block {
+public class BlockCore extends BlockContainer {
 	
 	public BlockCore(int id) {
 		super(id, Material.iron);
@@ -18,20 +17,9 @@ public class BlockCore extends Block {
 		setHardness(10F);
 		setResistance(10F);
 	}
-	
-	@Override
-	public boolean hasTileEntity(int metadata) {
-		return true;
-	}
 
-	@Override
-	public TileEntity createTileEntity(World world, int metadata) {
+	public TileEntity createNewTileEntity(World world) {
 		return new TileEntityCore();
-	}
-	
-	@Override
-	public int damageDropped(int metadata) {
-		return 0;
 	}
 	
 	@Override
@@ -46,10 +34,6 @@ public class BlockCore extends Block {
 	
 	@Override
 	public Icon getIcon(int meta, int side) {
-		if(Minecraft.getMinecraft().gameSettings.fancyGraphics)
-			return null;
-		
-		//FIXME return icon if needed
 		return null;
 	}
 	
@@ -59,13 +43,8 @@ public class BlockCore extends Block {
 	}
 	
 	@Override
-	public int getDamageValue(World w, int x, int y, int z) {
-		return 0;
-	}
-	
-	@Override
-	public int onBlockPlaced(World w, int x, int y, int z, int meta, float par6, float par7, float par8, int par9) {
-		return meta;
+	public int onBlockPlaced(World w, int x, int y, int z, int side, float hitx, float hity, float hitz, int meta) {
+		return side;
 	}
 	
 }

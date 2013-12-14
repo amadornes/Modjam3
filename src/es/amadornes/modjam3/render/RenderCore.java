@@ -17,7 +17,6 @@ import es.amadornes.modjam3.tileentity.TileEntityCore;
 public class RenderCore extends TileEntitySpecialRenderer implements IItemRenderer {
 	
 	private IModelCustom model = AdvancedModelLoader.loadModel("/assets/" + ModInfo.MOD_ID + "/model/core.obj");
-	private ResourceLocation texture;
 	private ResourceLocation texture_empty = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_empty.png");
 	private ResourceLocation texture_items = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_items.png");
 	private ResourceLocation texture_fluids = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_fluids.png");
