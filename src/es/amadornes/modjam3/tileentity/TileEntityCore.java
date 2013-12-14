@@ -19,19 +19,16 @@ import net.minecraftforge.fluids.IFluidHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.relauncher.Side;
+import es.amadornes.modjam3.lib.Blocks;
+import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
 	
 	private FluidTank tank = new FluidTank(1000);
 	private ItemStack item;
 	
-	private int OCmultiplier = 4;//Tick multiplier
-	private int OCmodules = 0;//Amount of OC modules installed
+	private boolean isInput = true;
 	
-	private int defaultItems = 1;
-	private int defaultFluid = 10;
-	private int itemsPerOC = 8;
-	private int fluidPerOC = 10;
 	
 	public boolean canAcceptStuff(){
 		if(tank.getFluidAmount() > 0 || item != null)
@@ -108,11 +105,11 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private void send(){
 		switch(getType()){
 		case 1://Items
-			
+			//FIXME
 			
 			return;
 		case 2://Fluids
-			
+			//FIXME
 			
 			return;
 		}
@@ -134,8 +131,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	public void writeToNBT(NBTTagCompound tag) {
 		super.writeToNBT(tag);
 
-		tag.setInteger("OCmodules", OCmodules);
-
 		NBTTagCompound tank = new NBTTagCompound();
 		this.tank.writeToNBT(tank);
 		tag.setCompoundTag("tank", tank);
@@ -145,13 +140,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			this.item.writeToNBT(item);
 			tag.setCompoundTag("item", item);
 		}
+
+		tag.setBoolean("isInput", isInput);
+		writeUpgradesToNBT(tag);
 	}
 	
 	@Override
 	public void readFromNBT(NBTTagCompound tag) {
 		super.readFromNBT(tag);
-		
-		OCmodules = tag.getInteger("OCmodules");
 		
 		NBTTagCompound tank = tag.getCompoundTag("tank");
 		this.tank.readFromNBT(tank);
@@ -160,6 +156,9 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			NBTTagCompound item = tag.getCompoundTag("item");
 			this.item = ItemStack.loadItemStackFromNBT(item);
 		}
+		
+		isInput = tag.getBoolean("isInput");
+		readUpgradesFromNBT(tag);
 	}
 	
 	
@@ -180,14 +179,17 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public ItemStack decrStackSize(int i, int amt) {
-		if(i == 0){
-			if(item.stackSize - amt > 0){
-				item.stackSize -= amt;
+		if(!isInput){
+			if(i == 0){
+				if(item.stackSize - amt > 0){
+					item.stackSize -= amt;
+				}
 			}
+			item = null;
+			onInventoryChanged();
+			return item;
 		}
-		item = null;
-		onInventoryChanged();
-		return item;
+		return null;
 	}
 
 	public ItemStack getStackInSlotOnClosing(int i) {
@@ -195,8 +197,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public void setInventorySlotContents(int i, ItemStack itemstack) {
-		item = itemstack;
-		onInventoryChanged();
+		if(isInput){
+			item = itemstack;
+			onInventoryChanged();
+		}
 	}
 
 	public String getInvName() {
@@ -212,7 +216,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean isUseableByPlayer(EntityPlayer entityplayer) {
-		return true;
+		return !isInput;
 	}
 
 	public void openChest() {
@@ -231,15 +235,21 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canInsertItem(int i, ItemStack itemstack, int j) {
-		ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
-		boolean can = (item == null || (itemstack.isItemEqual(item) && itemstack.stackSize < itemstack.getMaxStackSize())) && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
-		System.out.println(can);
-		return can;
+		if(isInput){
+			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
+			boolean can = (item == null || (itemstack.isItemEqual(item) && itemstack.stackSize < itemstack.getMaxStackSize())) && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
+			System.out.println(can);
+			return can;
+		}
+		return false;
 	}
 
 	public boolean canExtractItem(int i, ItemStack itemstack, int j) {
-		ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
-		return item != null && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
+		if(!isInput){
+			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
+			return item != null && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
+		}
+		return false;
 	}
 
 	public int fill(ForgeDirection from, FluidStack resource, boolean doFill) {
@@ -267,19 +277,23 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canFill(ForgeDirection from, Fluid fluid) {
-		if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
-			if(tank.getFluid() == null || tank.getFluidAmount() == 0 || (tank.getFluid().getFluid().equals(fluid) && tank.getFluidAmount() < tank.getCapacity())){
-				return true;
+		if(isInput){
+			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
+				if(tank.getFluid() == null || tank.getFluidAmount() == 0 || (tank.getFluid().getFluid().equals(fluid) && tank.getFluidAmount() < tank.getCapacity())){
+					return true;
+				}
 			}
 		}
 		return false;
 	}
 
 	public boolean canDrain(ForgeDirection from, Fluid fluid) {
-		if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
-			if(tank.getFluidAmount() > 0){
-				if(tank.getFluid().getFluid().equals(fluid)){
-					return true;
+		if(!isInput){
+			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
+				if(tank.getFluidAmount() > 0){
+					if(tank.getFluid().getFluid().equals(fluid)){
+						return true;
+					}
 				}
 			}
 		}
@@ -288,6 +302,93 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 
 	public FluidTankInfo[] getTankInfo(ForgeDirection from) {
 		return new FluidTankInfo[]{ tank.getInfo() };
+	}
+	
+	public boolean hasAntenna(){
+		return internalAntennas > 0 || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna);
+	}
+	
+	public int getAntennaRange(){
+		return internalAntennas*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/*
+	 * 
+	 *   ___  ___                                 .___                ____              __          _____  _____
+	 *  |   ||   \______   ________________     __| _/____   ______  /  _ \     _______/  |_ __ ___/ ____\/ ____\
+	 *  |   ||   /\____ \ / ___\_  __ \__  \   / __ |/ __ \ /  ___/  >  _ </\  /  ___/\   __\  |  \   __\\   __\ 
+	 *  |   ||  / |  |_> > /_/  >  | \// __ \_/ /_/ \  ___/ \___ \  /  <_\ \/  \___ \  |  | |  |  /|  |   |  |   
+	 *  |______/  |   __/\___  /|__|  (____  /\____ |\___  >____  > \_____\ \ /____  > |__| |____/ |__|   |__|
+	 *            |__|  /_____/            \/      \/    \/     \/         \/      \/                            
+	 * 
+	 */
+	
+
+	private boolean isHV = false;
+	
+	private int internalAntennas = 0;
+	private int maxInternalAntennas = 4;
+	
+	private int OCmultiplier = 4;//Tick multiplier
+	private int OCmodules = 0;//Amount of OC modules installed
+	private int maxOCmodules = 4;
+	
+	private int defaultItems = 1;
+	private int defaultFluid = 10;
+	private int itemsPerOC = 8;
+	private int fluidPerOC = 10;
+	
+	private void writeUpgradesToNBT(NBTTagCompound t){
+		NBTTagCompound tag = new NBTTagCompound();
+		
+		tag.setBoolean("isHV", isHV);
+		tag.setInteger("internalAntennas", internalAntennas);
+		tag.setInteger("OCmodules", OCmodules);
+		
+		t.setTag("upgrades", tag);
+	}
+	
+	private void readUpgradesFromNBT(NBTTagCompound t){
+		NBTTagCompound tag = t.getCompoundTag("upgrades");
+		
+		isHV = tag.getBoolean("isHV");
+		internalAntennas = tag.getInteger("internalAntennas");
+		OCmodules = tag.getInteger("OCmodules");
+	}
+	
+	public boolean installUpgrade(UpgradeType type){
+		switch(type){
+		case OVERCLOCKER:
+			if(OCmodules < maxOCmodules)
+				return true;
+			return false;
+		case INTERNAL_ANTENNA:
+			if(internalAntennas < maxInternalAntennas)
+				return true;
+			return false;
+		case HV:
+			if(!isHV)
+				return true;
+			return false;
+		}
+		return false;
+	}
+	
+	public static enum UpgradeType{
+		OVERCLOCKER,
+		INTERNAL_ANTENNA,
+		HV;
 	}
 	
 }
