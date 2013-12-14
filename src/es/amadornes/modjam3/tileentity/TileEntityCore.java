@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -14,6 +15,7 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
@@ -32,16 +34,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private FluidTank tank = new FluidTank(8000);
 	private ItemStack item;
 	
-	private boolean isInput = true;
+	private boolean isReceiver = true;//Can receive from other cores
 	private boolean isRepeater = false;
-	
-	private boolean direction = 0;
-	
-	public boolean canAddOverclocker(){
-		if(OCmodules < 4)
-			return true;
-		return false;
-	}
 
 	public int getType(){
 		if(item != null)
@@ -81,6 +75,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		return 0;
 	}
 	
+	public boolean canAccept(ItemStack is){
+		return (isReceiver || isRepeater) && (item == null || (item.isItemEqual(is) && item.stackSize < item.getMaxStackSize())) && tank.getFluidAmount() == 0;
+	}
+	
+	public boolean canAccept(FluidStack fs){
+		return (isReceiver || isRepeater) && (tank.getFluidAmount() == 0 || (tank.getFluid().isFluidEqual(fs) && tank.getFluidAmount() < tank.getCapacity())) && item == null;
+	}
+	
 	private int tick = 0;
 	private int needed = 0;
 	
@@ -91,7 +93,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
 			}
 			if(tick == needed){
-				double minticks = 15;
+				double minticks = 16;
 				minticks -= OCmodules * OCmultiplier;
 				int mticks = (int) Math.max(0, Math.floor(minticks));
 				needed = mticks + new Random().nextInt(mticks);
@@ -107,23 +109,67 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(hasUpgrade(UpgradeType.HV)){
 			//TODO ADD UPGRADE CODE
 		}else{
-			if(hasAntenna()){
-				List<TileEntityCore> cores = getNearbyReceivingCores(8);
-				if(cores.size() > 0){
-					TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
-					switch(getType()){
-					case 1://Items
-						
-						
-						return;
-					case 2://Fluids
-						//FIXME SEND
-						
-						return;
+			if(!isReceiver){
+				if(hasAntenna()){
+					List<TileEntityCore> cores = getNearbyReceivingCores(8);
+					if(cores.size() > 0){
+						for(int timesTried = 0; timesTried < 10; timesTried++){
+							TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
+							switch(getType()){
+							case 1://Items
+								if(core.canAccept(item)){
+									int freeSlots = 64;
+									if(core.item != null){
+										freeSlots = core.item.getMaxStackSize() - core.item.stackSize;
+									}
+									int items = Math.min(getTransferrableItems(), freeSlots);
+									
+									if(core.item == null){
+										core.item = item.copy();
+										core.item.stackSize = items;
+									}else{
+										core.item.stackSize += items;
+									}
+									
+									if(item.stackSize - items == 0){
+										item = null;
+									}else{
+										item.stackSize -= items;
+									}
+									return;
+								}
+							case 2://Fluids
+								if(core.canAccept(tank.getFluid())){
+									int fluid = Math.min(getTransferrableMilibuckets(), core.tank.getCapacity() - core.tank.getFluidAmount());
+									
+									return;
+								}
+							}
+						}
 					}
 				}
 			}
 		}
+	}
+	
+	private List<EntityLiving> getNearbyEntities(int radius){
+		List<EntityLiving> entities = new ArrayList<EntityLiving>();
+		Chunk c1 = worldObj.getChunkFromBlockCoords(xCoord - radius, zCoord - radius);
+		Chunk c2 = worldObj.getChunkFromBlockCoords(xCoord - radius, zCoord + radius);
+		Chunk c3 = worldObj.getChunkFromBlockCoords(xCoord + radius, zCoord + radius);
+		Chunk c4 = worldObj.getChunkFromBlockCoords(xCoord + radius, zCoord - radius);
+		List<Chunk> chunks = new ArrayList<Chunk>();
+		chunks.add(c1);
+		if(!chunks.contains(c2))
+			chunks.add(c2);
+		if(!chunks.contains(c3))
+			chunks.add(c3);
+		if(!chunks.contains(c4))
+			chunks.add(c4);
+		for(Chunk c : chunks){
+			//FIXME
+		}
+		return entities;
 	}
 	
 	private List<TileEntityCore> getNearbyRepeaters(int radius){
@@ -144,7 +190,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		List<TileEntityCore> receivers = new ArrayList<TileEntityCore>();
 		
 		for(TileEntityCore core : cores){
-			if(!core.isRepeater && !core.isInput){
+			if(!core.isRepeater && core.isReceiver){
 				receivers.add(core);
 			}
 		}
@@ -155,9 +201,9 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private List<TileEntityCore> getNearbyCores(int radius){
 		Vec3 thisTE = new Vector3(this).toVec3();
 		List<TileEntityCore> cores = new ArrayList<TileEntityCore>();
-		for(int x = xCoord - radius; x < xCoord + radius; x++){
-			for(int y = yCoord - radius; y < yCoord + radius; y++){
-				for(int z = zCoord - radius; z < xCoord + radius; z++){
+		for(int x = (xCoord - radius); x < (xCoord + radius); x++){
+			for(int y = (yCoord - radius); y < (yCoord + radius); y++){
+				for(int z = (zCoord - radius); z < (zCoord + radius); z++){
 					TileEntity te = worldObj.getBlockTileEntity(x, y, z);
 					if(te != null){
 						if(te instanceof TileEntityCore){
@@ -245,7 +291,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			tag.setCompoundTag("item", item);
 		}
 
-		tag.setBoolean("isInput", isInput);
+		tag.setBoolean("isInput", isReceiver);
 		tag.setBoolean("isRepeater", isRepeater);
 		writeUpgradesToNBT(tag);
 	}
@@ -262,7 +308,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			this.item = ItemStack.loadItemStackFromNBT(item);
 		}
 
-		isInput = tag.getBoolean("isInput");
+		isReceiver = tag.getBoolean("isInput");
 		isRepeater = tag.getBoolean("isRepeater");
 		readUpgradesFromNBT(tag);
 	}
@@ -285,7 +331,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public ItemStack decrStackSize(int i, int amt) {
-		if(!isInput && !isRepeater){
+		if(isReceiver && !isRepeater){
 			if(i == 0){
 				if(item.stackSize - amt > 0){
 					item.stackSize -= amt;
@@ -304,10 +350,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public void setInventorySlotContents(int i, ItemStack itemstack) {
-		if(isInput){
+		System.out.println("Set");
+		if(!isReceiver && !isRepeater){
 			item = itemstack;
 			onInventoryChanged();
-			System.out.println("Set");
 		}
 	}
 
@@ -335,7 +381,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean isItemValidForSlot(int i, ItemStack itemstack) {
-		return canInsertItem(i, itemstack, (blockMetadata + 1)%6);
+		return canInsertItem(i, itemstack, ((blockMetadata/2 == Math.floor(blockMetadata)/2) ? (blockMetadata + 1)%6 : (blockMetadata - 1)%6));
 	}
 
 	public int[] getAccessibleSlotsFromSide(int side) {
@@ -347,7 +393,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canInsertItem(int i, ItemStack itemstack, int j) {
-		if(isInput){
+		if(!isReceiver && !isRepeater){
 			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
 			if(oppositeDirection == ForgeDirection.getOrientation(blockMetadata)){
 				if(tank.getFluidAmount() == 0){
@@ -367,7 +413,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canExtractItem(int i, ItemStack itemstack, int j) {
-		if(!isInput && !isRepeater){
+		if(isReceiver && !isRepeater){
 			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
 			return item != null && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
 		}
@@ -388,7 +434,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain) {
-		if(!isInput && !isRepeater){
+		if(isReceiver && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					if(tank.getFluid().getFluid().equals(resource.getFluid())){
@@ -405,7 +451,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public FluidStack drain(ForgeDirection from, int maxDrain, boolean doDrain) {
-		if(!isInput && !isRepeater){
+		if(isReceiver && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					FluidStack fs = new FluidStack(tank.getFluid().getFluid(), Math.min(50, Math.min(maxDrain, tank.getFluidAmount())));
@@ -420,7 +466,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canFill(ForgeDirection from, Fluid fluid) {
-		if(isInput){
+		if(!isReceiver && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluid() == null || tank.getFluidAmount() == 0 || (tank.getFluid().getFluid().equals(fluid) && tank.getFluidAmount() < tank.getCapacity())){
 					return true;
@@ -431,7 +477,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canDrain(ForgeDirection from, Fluid fluid) {
-		if(!isInput && !isRepeater){
+		if(isReceiver && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					if(tank.getFluid().getFluid().equals(fluid)){
@@ -448,15 +494,15 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public boolean hasAntenna(){
-		return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna);
+		return true;//return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna); FIXME
 	}
 	
 	public int getAntennaRange(){
 		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
 	}
 	
-	public boolean isInput(){
-		return isInput;
+	public boolean isReceiver(){
+		return isReceiver;
 	}
 	
 	public boolean isRepeater(){
@@ -466,13 +512,13 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	public void setType(int type){
 		if(type == 0){
 			isRepeater = false;
-			isInput = true;
+			isReceiver = true;
 		}else if(type == 1){
 			isRepeater = false;
-			isInput = false;
+			isReceiver = false;
 		}else if(type == 2){
 			isRepeater = true;
-			isInput = false;
+			isReceiver = false;
 		}
 	}
 	

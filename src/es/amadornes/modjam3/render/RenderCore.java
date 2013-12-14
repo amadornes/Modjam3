@@ -90,7 +90,7 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			if(te.isRepeater()){
 				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_repeater);
 			}else{
-				if(te.isInput()){
+				if(te.isReceiver()){
 					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_input);
 				}else{
 					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_output);

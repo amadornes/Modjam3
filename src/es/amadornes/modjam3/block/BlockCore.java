@@ -115,7 +115,7 @@ public class BlockCore extends BlockContainer {
 		if(core.isRepeater()){
 			return new ItemStack(this, 1, 2);
 		}else{
-			if(!core.isInput()){
+			if(!core.isReceiver()){
 				return new ItemStack(this, 1, 1);
 			}else{
 				return new ItemStack(this, 1, 0);
