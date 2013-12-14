@@ -22,6 +22,12 @@ import es.amadornes.modjam3.tileentity.TileEntityCore;
 public class RenderCore extends TileEntitySpecialRenderer implements IItemRenderer {
 	
 	private IModelCustom model = AdvancedModelLoader.loadModel("/assets/" + ModInfo.MOD_ID + "/model/core.obj");
+	private ResourceLocation texture_base = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_base.png");
+
+	private ResourceLocation texture_input = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_input.png");
+	private ResourceLocation texture_output = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_output.png");
+	private ResourceLocation texture_repeater = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_repeater.png");
+	
 	private ResourceLocation texture_empty = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_empty.png");
 	private ResourceLocation texture_items = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_items.png");
 	private ResourceLocation texture_fluids = new ResourceLocation(ModInfo.MOD_ID, "textures/model/core_fluids.png");
@@ -68,21 +74,6 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 		
 		int type = te.getType();
 		
-		switch(type){
-		case 0:
-			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
-			break;
-		case 1:
-			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_items);
-			break;
-		case 2:
-			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_fluids);
-			break;
-		default:
-			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
-			break;
-		}
-		
 		GL11.glPushMatrix();
 			
 			GL11.glTranslated(x, y, z);
@@ -91,9 +82,42 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	        GL11.glRotated(rx, 1, 0, 0);
 	        GL11.glRotated(ry, 0, 1, 0);
 	        GL11.glRotated(rz, 0, 0, 1);
-			model.renderAll();
+
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_base);
+			GL11.glPushMatrix();
+				GL11.glScaled(0.998, 0.998, 0.998);
+				model.renderAll();
+			GL11.glPopMatrix();
 			
-			//System.out.println(te.getUpgradeItemStack(0) + " - " + te.getUpgradeItemStack(1) + " - " + te.getUpgradeItemStack(2) + " - " + te.getUpgradeItemStack(3));
+			if(te.isRepeater()){
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_repeater);
+			}else{
+				if(te.isInput()){
+					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_input);
+				}else{
+					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_output);
+				}
+			}
+			GL11.glPushMatrix();
+				GL11.glScaled(0.999, 0.999, 0.999);
+				model.renderAll();
+			GL11.glPopMatrix();
+			
+			switch(type){
+			case 0:
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
+				break;
+			case 1:
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_items);
+				break;
+			case 2:
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_fluids);
+				break;
+			default:
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
+				break;
+			}
+			model.renderAll();
 			
 			if(te.blockMetadata == 0 || te.blockMetadata == 1){
 				GL11.glPushMatrix();

@@ -29,6 +29,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private ItemStack item;
 	
 	private boolean isInput = true;
+	private boolean isRepeater = false;
 	
 	public boolean canAddOverclocker(){
 		if(OCmodules < 4)
@@ -97,15 +98,19 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private void send(){
-		switch(getType()){
-		case 1://Items
-			//FIXME
-			
-			return;
-		case 2://Fluids
-			//FIXME
-			
-			return;
+		if(hasUpgrade(UpgradeType.HV)){
+			//TODO ADD UPGRADE CODE
+		}else{
+			switch(getType()){
+			case 1://Items
+				//FIXME
+				
+				return;
+			case 2://Fluids
+				//FIXME
+				
+				return;
+			}
 		}
 	}
 	
@@ -173,14 +178,15 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public ItemStack decrStackSize(int i, int amt) {
-		if(!isInput){
+		if(!isInput && !isRepeater){
 			if(i == 0){
 				if(item.stackSize - amt > 0){
 					item.stackSize -= amt;
+				}else{
+					item = null;
 				}
+				onInventoryChanged();
 			}
-			item = null;
-			onInventoryChanged();
 			return item;
 		}
 		return null;
@@ -254,7 +260,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canExtractItem(int i, ItemStack itemstack, int j) {
-		if(!isInput){
+		if(!isInput && !isRepeater){
 			ForgeDirection oppositeDirection = ForgeDirection.getOrientation(j).getOpposite();
 			return item != null && oppositeDirection == ForgeDirection.getOrientation(blockMetadata);
 		}
@@ -275,7 +281,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain) {
-		if(!isInput){
+		if(!isInput && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					if(tank.getFluid().getFluid().equals(resource.getFluid())){
@@ -292,7 +298,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public FluidStack drain(ForgeDirection from, int maxDrain, boolean doDrain) {
-		if(!isInput){
+		if(!isInput && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					FluidStack fs = new FluidStack(tank.getFluid().getFluid(), Math.min(50, Math.min(maxDrain, tank.getFluidAmount())));
@@ -318,7 +324,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public boolean canDrain(ForgeDirection from, Fluid fluid) {
-		if(!isInput){
+		if(!isInput && !isRepeater){
 			if(from == ForgeDirection.getOrientation(blockMetadata).getOpposite()){
 				if(tank.getFluidAmount() > 0){
 					if(tank.getFluid().getFluid().equals(fluid)){
@@ -340,6 +346,27 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public int getAntennaRange(){
 		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
+	}
+	
+	public boolean isInput(){
+		return isInput;
+	}
+	
+	public boolean isRepeater(){
+		return isRepeater;
+	}
+	
+	public void setType(int type){
+		if(type == 0){
+			isRepeater = false;
+			isInput = true;
+		}else if(type == 1){
+			isRepeater = false;
+			isInput = false;
+		}else if(type == 2){
+			isRepeater = true;
+			isInput = false;
+		}
 	}
 	
 	/*
