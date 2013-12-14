@@ -13,8 +13,16 @@ public class Path {
 		this.steps = steps;
 	}
 	
-	public int getLength(){
-		return steps.size();
+	public double getLength(){
+		double length = 0;
+		Vector3 last = null;
+		for(Vector3 step : steps){
+			if(last != null){
+				length += last.toVec3().distanceTo(step.toVec3());
+			}
+			last = step;
+		}
+		return length;
 	}
 	
 	public List<Vector3> getSteps(){

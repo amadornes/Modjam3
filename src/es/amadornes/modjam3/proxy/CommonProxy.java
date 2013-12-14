@@ -2,6 +2,7 @@ package es.amadornes.modjam3.proxy;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 import es.amadornes.modjam3.block.BlockCore;
+import es.amadornes.modjam3.block.ItemBlockCore;
 import es.amadornes.modjam3.item.ItemUpgrade;
 import es.amadornes.modjam3.lib.Blocks;
 import es.amadornes.modjam3.lib.Ids;
@@ -18,7 +19,7 @@ public class CommonProxy {
 	
 	public void registerBlocks(){
 		Blocks.core = new BlockCore(Ids.core);
-		GameRegistry.registerBlock(Blocks.core, Blocks.core.getUnlocalizedName());
+		GameRegistry.registerBlock(Blocks.core, ItemBlockCore.class, Blocks.core.getUnlocalizedName());
 	}
 	
 	public void registerTileEntities(){

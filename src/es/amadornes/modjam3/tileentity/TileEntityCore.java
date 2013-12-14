@@ -1,8 +1,11 @@
 package es.amadornes.modjam3.tileentity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -10,6 +13,7 @@ import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Vec3;
 import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
@@ -30,6 +34,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	private boolean isInput = true;
 	private boolean isRepeater = false;
+	
+	private boolean direction = 0;
 	
 	public boolean canAddOverclocker(){
 		if(OCmodules < 4)
@@ -101,17 +107,116 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(hasUpgrade(UpgradeType.HV)){
 			//TODO ADD UPGRADE CODE
 		}else{
-			switch(getType()){
-			case 1://Items
-				//FIXME
-				
-				return;
-			case 2://Fluids
-				//FIXME
-				
-				return;
+			if(hasAntenna()){
+				List<TileEntityCore> cores = getNearbyReceivingCores(8);
+				if(cores.size() > 0){
+					TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
+					switch(getType()){
+					case 1://Items
+						
+						
+						return;
+					case 2://Fluids
+						//FIXME SEND
+						
+						return;
+					}
+				}
 			}
 		}
+	}
+	
+	private List<TileEntityCore> getNearbyRepeaters(int radius){
+		List<TileEntityCore> cores = getNearbyCores(radius);
+		List<TileEntityCore> repeaters = new ArrayList<TileEntityCore>();
+		
+		for(TileEntityCore core : cores){
+			if(core.isRepeater){
+				repeaters.add(core);
+			}
+		}
+		
+		return repeaters;
+	}
+	
+	private List<TileEntityCore> getNearbyReceivingCores(int radius){
+		List<TileEntityCore> cores = getNearbyCores(radius);
+		List<TileEntityCore> receivers = new ArrayList<TileEntityCore>();
+		
+		for(TileEntityCore core : cores){
+			if(!core.isRepeater && !core.isInput){
+				receivers.add(core);
+			}
+		}
+		
+		return receivers;
+	}
+	
+	private List<TileEntityCore> getNearbyCores(int radius){
+		Vec3 thisTE = new Vector3(this).toVec3();
+		List<TileEntityCore> cores = new ArrayList<TileEntityCore>();
+		for(int x = xCoord - radius; x < xCoord + radius; x++){
+			for(int y = yCoord - radius; y < yCoord + radius; y++){
+				for(int z = zCoord - radius; z < xCoord + radius; z++){
+					TileEntity te = worldObj.getBlockTileEntity(x, y, z);
+					if(te != null){
+						if(te instanceof TileEntityCore){
+							Vec3 tile = new Vector3(x, y, z).toVec3();
+							if(thisTE.distanceTo(tile) < radius){
+								cores.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
+							}
+						}
+					}
+				}
+			}
+		}
+		return cores;
+	}
+	
+	private List<IInventory> getNearbyInventories(int radius){
+		Vec3 thisTE = new Vector3(this).toVec3();
+		List<IInventory> inventories = new ArrayList<IInventory>();
+		for(int x = xCoord - radius; x < xCoord + radius; x++){
+			for(int y = yCoord - radius; y < yCoord + radius; y++){
+				for(int z = zCoord - radius; z < xCoord + radius; z++){
+					TileEntity te = worldObj.getBlockTileEntity(x, y, z);
+					if(te != null){
+						if(te instanceof IInventory){
+							if(!(te instanceof TileEntityCore)){
+								Vec3 tile = new Vector3(x, y, z).toVec3();
+								if(thisTE.distanceTo(tile) < radius){
+									inventories.add((IInventory) worldObj.getBlockTileEntity(x, y, z));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return inventories;
+	}
+	
+	private List<IFluidHandler> getNearbyTanks(int radius){
+		Vec3 thisTE = new Vector3(this).toVec3();
+		List<IFluidHandler> inventories = new ArrayList<IFluidHandler>();
+		for(int x = xCoord - radius; x < xCoord + radius; x++){
+			for(int y = yCoord - radius; y < yCoord + radius; y++){
+				for(int z = zCoord - radius; z < xCoord + radius; z++){
+					TileEntity te = worldObj.getBlockTileEntity(x, y, z);
+					if(te != null){
+						if(te instanceof IFluidHandler){
+							if(!(te instanceof TileEntityCore)){
+								Vec3 tile = new Vector3(x, y, z).toVec3();
+								if(thisTE.distanceTo(tile) < radius){
+									inventories.add((IFluidHandler) worldObj.getBlockTileEntity(x, y, z));
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return inventories;
 	}
 	
 	@Override
@@ -141,6 +246,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}
 
 		tag.setBoolean("isInput", isInput);
+		tag.setBoolean("isRepeater", isRepeater);
 		writeUpgradesToNBT(tag);
 	}
 	
@@ -155,8 +261,9 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			NBTTagCompound item = tag.getCompoundTag("item");
 			this.item = ItemStack.loadItemStackFromNBT(item);
 		}
-		
+
 		isInput = tag.getBoolean("isInput");
+		isRepeater = tag.getBoolean("isRepeater");
 		readUpgradesFromNBT(tag);
 	}
 	
@@ -405,11 +512,13 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private boolean isFaceUpgradable(ForgeDirection face){
 		int f = 0;
 		ForgeDirection[] upgradable = determineUpgradableFaces();
-		for(ForgeDirection dir : upgradable){
-			if(dir == face)
-				if(upgrades[f] == null)
-					return true;
-			f++;
+		if(upgradable != null){
+			for(ForgeDirection dir : upgradable){
+				if(dir == face)
+					if(upgrades[f] == null)
+						return true;
+				f++;
+			}
 		}
 		return false;
 	}
@@ -494,18 +603,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				break;
 			id++;
 		}
-		if(upgrades[id] == null){
-			upgrades[id] = type;
+		if(id < 4){
+			if(upgrades[id] == null){
+				upgrades[id] = type;
+			}
 		}
 	}
 	
-	public void removeUpgrade(ForgeDirection face){
-		int id = 0;
-		for(ForgeDirection dir : determineUpgradableFaces()){
-			if(dir == face)
-				break;
-			id++;
-		}
+	public void removeUpgrade(int id){
 		upgrades[id] = null;
 	}
 	
@@ -513,6 +618,173 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(upgrades[upgrade] == null)
 			return null;
 		return new ItemStack(Items.upgrade, 1, upgrades[upgrade].ordinal());
+	}
+	
+	@SuppressWarnings("incomplete-switch")
+	public ItemStack getUpgradeOnSide(ForgeDirection side){
+		if(blockMetadata == 0){
+			switch(side){
+			case WEST:
+				return getUpgradeItemStack(1);
+			case EAST:
+				return getUpgradeItemStack(0);
+			case SOUTH:
+				return getUpgradeItemStack(3);
+			case NORTH:
+				return getUpgradeItemStack(2);
+			}
+		}else if(blockMetadata == 1){
+			switch(side){
+			case EAST:
+				return getUpgradeItemStack(0);
+			case WEST:
+				return getUpgradeItemStack(1);
+			case NORTH:
+				return getUpgradeItemStack(2);
+			case SOUTH:
+				return getUpgradeItemStack(3);
+			}
+		}else if(blockMetadata == 2){
+			switch(side){
+			case UP:
+				return getUpgradeItemStack(0);
+			case DOWN:
+				return getUpgradeItemStack(1);
+			case EAST:
+				return getUpgradeItemStack(2);
+			case WEST:
+				return getUpgradeItemStack(3);
+			}
+		}else if(blockMetadata == 3){
+			switch(side){
+			case UP:
+				return getUpgradeItemStack(0);
+			case DOWN:
+				return getUpgradeItemStack(1);
+			case EAST:
+				return getUpgradeItemStack(2);
+			case WEST:
+				return getUpgradeItemStack(3);
+			}
+		}else if(blockMetadata == 4){
+			switch(side){
+			case UP:
+				return getUpgradeItemStack(0);
+			case DOWN:
+				return getUpgradeItemStack(1);
+			case NORTH:
+				return getUpgradeItemStack(2);
+			case SOUTH:
+				return getUpgradeItemStack(3);
+			}
+		}else if(blockMetadata == 5){
+			switch(side){
+			case UP:
+				return getUpgradeItemStack(0);
+			case DOWN:
+				return getUpgradeItemStack(1);
+			case NORTH:
+				return getUpgradeItemStack(2);
+			case SOUTH:
+				return getUpgradeItemStack(3);
+			}
+		}
+		return null;
+	}
+	
+	@SuppressWarnings("incomplete-switch")
+	public void removeUpgradeOnSide(ForgeDirection side){
+		if(blockMetadata == 0){
+			switch(side){
+			case WEST:
+				removeUpgrade(1);
+				return;
+			case EAST:
+				removeUpgrade(0);
+				return;
+			case SOUTH:
+				removeUpgrade(3);
+				return;
+			case NORTH:
+				removeUpgrade(2);
+				return;
+			}
+		}else if(blockMetadata == 1){
+			switch(side){
+			case EAST:
+				removeUpgrade(0);
+				return;
+			case WEST:
+				removeUpgrade(1);
+				return;
+			case NORTH:
+				removeUpgrade(2);
+				return;
+			case SOUTH:
+				removeUpgrade(3);
+				return;
+			}
+		}else if(blockMetadata == 2){
+			switch(side){
+			case UP:
+				removeUpgrade(0);
+				return;
+			case DOWN:
+				removeUpgrade(1);
+				return;
+			case EAST:
+				removeUpgrade(2);
+				return;
+			case WEST:
+				removeUpgrade(3);
+				return;
+			}
+		}else if(blockMetadata == 3){
+			switch(side){
+			case UP:
+				removeUpgrade(0);
+				return;
+			case DOWN:
+				removeUpgrade(1);
+				return;
+			case EAST:
+				removeUpgrade(2);
+				return;
+			case WEST:
+				removeUpgrade(3);
+				return;
+			}
+		}else if(blockMetadata == 4){
+			switch(side){
+			case UP:
+				removeUpgrade(0);
+				return;
+			case DOWN:
+				removeUpgrade(1);
+				return;
+			case NORTH:
+				removeUpgrade(2);
+				return;
+			case SOUTH:
+				removeUpgrade(3);
+				return;
+			}
+		}else if(blockMetadata == 5){
+			switch(side){
+			case UP:
+				removeUpgrade(0);
+				return;
+			case DOWN:
+				removeUpgrade(1);
+				return;
+			case NORTH:
+				removeUpgrade(2);
+				return;
+			case SOUTH:
+				removeUpgrade(3);
+				return;
+			}
+		}
 	}
 	
 	public static enum UpgradeType{

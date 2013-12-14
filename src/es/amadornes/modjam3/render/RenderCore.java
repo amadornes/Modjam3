@@ -11,6 +11,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.model.AdvancedModelLoader;
 import net.minecraftforge.client.model.IModelCustom;
+import net.minecraftforge.common.ForgeDirection;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -84,10 +85,7 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	        GL11.glRotated(rz, 0, 0, 1);
 
 			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_base);
-			GL11.glPushMatrix();
-				GL11.glScaled(0.998, 0.998, 0.998);
-				model.renderAll();
-			GL11.glPopMatrix();
+			model.renderAll();
 			
 			if(te.isRepeater()){
 				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_repeater);
@@ -98,10 +96,7 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_output);
 				}
 			}
-			GL11.glPushMatrix();
-				GL11.glScaled(0.999, 0.999, 0.999);
-				model.renderAll();
-			GL11.glPopMatrix();
+			model.renderAll();
 			
 			switch(type){
 			case 0:
@@ -119,142 +114,74 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			}
 			model.renderAll();
 			
-			if(te.blockMetadata == 0 || te.blockMetadata == 1){
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -1.7);
-					renderItem(te.getUpgradeItemStack(0));
-				GL11.glPopMatrix();
-				
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -0.2);
-					renderItem(te.getUpgradeItemStack(1));
-				GL11.glPopMatrix();
-				
-				if(te.blockMetadata == 0){
-					GL11.glPushMatrix();
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(0.5, 0.5, -0.2);
-						renderItem(te.getUpgradeItemStack(3));
-					GL11.glPopMatrix();
-					
-					GL11.glPushMatrix();
-						GL11.glRotated(180, 0, 1, 0);
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(-1.5, 0.5, 1.8);
-						renderItem(te.getUpgradeItemStack(2));
-					GL11.glPopMatrix();
-				}else{
-					GL11.glPushMatrix();
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(0.5, 0.5, -0.2);
-						renderItem(te.getUpgradeItemStack(2));
-					GL11.glPopMatrix();
-					
-					GL11.glPushMatrix();
-						GL11.glRotated(180, 0, 1, 0);
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(-1.5, 0.5, 1.8);
-						renderItem(te.getUpgradeItemStack(3));
-					GL11.glPopMatrix();
-				}
-				
-			}else if(te.blockMetadata == 2 || te.blockMetadata == 3){
-				if(te.blockMetadata == 2){
-					GL11.glPushMatrix();
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(0.5, 0.5, -0.2);
-						renderItem(te.getUpgradeItemStack(1));
-					GL11.glPopMatrix();
-					
-					GL11.glPushMatrix();
-						GL11.glRotated(180, 0, 1, 0);
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(-1.5, 0.5, 1.8);
-						renderItem(te.getUpgradeItemStack(0));
-					GL11.glPopMatrix();
-				}else{
-					GL11.glPushMatrix();
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(0.5, 0.5, -0.2);
-						renderItem(te.getUpgradeItemStack(0));
-					GL11.glPopMatrix();
-					
-					GL11.glPushMatrix();
-						GL11.glRotated(180, 0, 1, 0);
-						GL11.glScaled(0.5, 0.5, 0.5);
-						GL11.glTranslated(-1.5, 0.5, 1.8);
-						renderItem(te.getUpgradeItemStack(1));
-					GL11.glPopMatrix();
-				}
-				
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -1.7);
-					renderItem(te.getUpgradeItemStack(2));
-				GL11.glPopMatrix();
-				
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -0.2);
-					renderItem(te.getUpgradeItemStack(3));
-				GL11.glPopMatrix();
-		}else if(te.blockMetadata == 4 || te.blockMetadata == 5){
-			if(te.blockMetadata == 4){
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -1.7);
-					renderItem(te.getUpgradeItemStack(1));
-				GL11.glPopMatrix();
-				
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -0.2);
-					renderItem(te.getUpgradeItemStack(0));
-				GL11.glPopMatrix();
-			}else{
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -1.7);
-					renderItem(te.getUpgradeItemStack(0));
-				GL11.glPopMatrix();
-				
-				GL11.glPushMatrix();
-					GL11.glRotated(-90, 0, 1, 0);
-					GL11.glScaled(0.5, 0.5, 0.5);
-					GL11.glTranslated(-1.5, 0.5, -0.2);
-					renderItem(te.getUpgradeItemStack(1));
-				GL11.glPopMatrix();
+		GL11.glPopMatrix();
+		
+		GL11.glPushMatrix();
+			GL11.glTranslated(x, y, z);
+	        GL11.glTranslated(0, 0, 1);
+	        GL11.glTranslated(tx, ty, tz);
+			switch(te.blockMetadata){
+			case 1:
+				GL11.glTranslated(0, -1, 1);
+				break;
+			case 2:
+				GL11.glTranslated(0, 0, 1);
+				break;
+			case 3:
+				GL11.glTranslated(0, -1, 0);
+				break;
+			case 4:
+				GL11.glTranslated(0, -1, 0);
+				break;
+			case 5:
+				GL11.glTranslated(-1, 0, 0);
+				break;
 			}
-			
-			GL11.glPushMatrix();
-				GL11.glScaled(0.5, 0.5, 0.5);
-				GL11.glTranslated(0.5, 0.5, -0.2);
-				renderItem(te.getUpgradeItemStack(3));
-			GL11.glPopMatrix();
-			
-			GL11.glPushMatrix();
-				GL11.glRotated(180, 0, 1, 0);
-				GL11.glScaled(0.5, 0.5, 0.5);
-				GL11.glTranslated(-1.5, 0.5, 1.8);
-				renderItem(te.getUpgradeItemStack(2));
-			GL11.glPopMatrix();
-		}
-			
+			renderUpgrades(te);
+		GL11.glPopMatrix();
+	}
+	
+	private void renderUpgrades(TileEntityCore te){
+		GL11.glPushMatrix();
+			GL11.glRotated(90, 1, 0, 0);
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(0.5, -1.5, -1.75);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.UP));
+		GL11.glPopMatrix();
+		GL11.glPushMatrix();
+			GL11.glRotated(-90, 1, 0, 0);
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(0.5, 0.5, 0.25);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.DOWN));
+		GL11.glPopMatrix();
+		GL11.glPushMatrix();
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(0.5, 0.5, -1.75);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.NORTH));
+		GL11.glPopMatrix();
+		GL11.glPushMatrix();
+			GL11.glRotated(180, 0, 1, 0);
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(-1.5, 0.5, 0.25);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.SOUTH));
+		GL11.glPopMatrix();
+		GL11.glPushMatrix();
+			GL11.glRotated(-90, 0, 1, 0);
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(-1.5, 0.5, -1.75);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.EAST));
+		GL11.glPopMatrix();
+		GL11.glPushMatrix();
+			GL11.glRotated(90, 0, 1, 0);
+			GL11.glScaled(0.5, 0.5, 0.5);
+			GL11.glTranslated(0.5, 0.5, 0.25);
+			renderItem(te.getUpgradeOnSide(ForgeDirection.WEST));
 		GL11.glPopMatrix();
 	}
 	
 	private void renderItem(ItemStack item){
 		if(item != null){
-			float divider = 8F;
+			float divider = 6F;
 			
 			TextureManager texturemanager = Minecraft.getMinecraft().getTextureManager();
 			
@@ -284,21 +211,26 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	public void renderItem(ItemRenderType type, ItemStack item, Object... data) {
 		switch(type){
 		case ENTITY:
+			//FIXME ADD RENDER
 			return;
 		case EQUIPPED:
+			//FIXME ADD RENDER
 			return;
 		case EQUIPPED_FIRST_PERSON:
-			render(0, 1, 0, 180, 0, 0, 1);
+			render(0, 1, 0, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case FIRST_PERSON_MAP:
 			return;
 		case INVENTORY:
-			render(0, 0.9, 0, 180, 0, 0, 1);
+			render(0, 0.9, 0, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		}
 	}
 	
-	public void render(double x, double y, double z, double rx, double ry, double rz, double scale){
+	public void render(double x, double y, double z, double rx, double ry, double rz, double scale, int metadata){
+		boolean isInput = metadata == 0;
+		boolean isRepeater = metadata == 3;
+		
 		GL11.glPushMatrix();
 			
 			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
@@ -309,6 +241,20 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			GL11.glRotated(ry, 0, 1, 0);
 			GL11.glRotated(rz, 0, 0, 1);
 			
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_base);
+			model.renderAll();
+			
+			if(isRepeater){
+				FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_repeater);
+			}else{
+				if(isInput){
+					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_input);
+				}else{
+					FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_output);
+				}
+			}
+			model.renderAll();
+			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture_empty);
 			model.renderAll();
 			
 		GL11.glPopMatrix();

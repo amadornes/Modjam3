@@ -2,6 +2,7 @@ package es.amadornes.modjam3.pathfind;
 
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
 
@@ -136,6 +137,10 @@ public class Vector3 {
 			return vec.w == w && vec.x == x && vec.y == y && vec.z == z; 
 		}
 		return false;
+	}
+	
+	public Vec3 toVec3(){
+		return Vec3.createVectorHelper(x, y, z);
 	}
 
 }
