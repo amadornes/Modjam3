@@ -335,6 +335,36 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	 */
 	
 
+	private UpgradeType[] upgrades = new UpgradeType[4];
+	
+	private ForgeDirection[] determineUpgradableFaces(){
+		switch(blockMetadata){
+		case 0:
+		case 1:
+			return new ForgeDirection[]{ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.NORTH, ForgeDirection.SOUTH};
+		case 2:
+		case 3:
+			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.EAST, ForgeDirection.WEST};
+		case 4:
+		case 5:
+			return new ForgeDirection[]{ForgeDirection.UP, ForgeDirection.DOWN, ForgeDirection.NORTH, ForgeDirection.SOUTH};
+		}
+		
+		return null;
+	}
+	
+	private boolean isFaceUpgradable(ForgeDirection face){
+		int f = 0;
+		ForgeDirection[] upgradable = determineUpgradableFaces();
+		for(ForgeDirection dir : upgradable){
+			if(dir == face)
+				if(upgrades[f] == null)
+					return true;
+			f++;
+		}
+		return false;
+	}
+	
 	private boolean isHV = false;
 	
 	private int internalAntennas = 0;
@@ -367,20 +397,22 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		OCmodules = tag.getInteger("OCmodules");
 	}
 	
-	public boolean installUpgrade(UpgradeType type){
-		switch(type){
-		case OVERCLOCKER:
-			if(OCmodules < maxOCmodules)
-				return true;
-			return false;
-		case INTERNAL_ANTENNA:
-			if(internalAntennas < maxInternalAntennas)
-				return true;
-			return false;
-		case HV:
-			if(!isHV)
-				return true;
-			return false;
+	public boolean installUpgrade(UpgradeType type, ForgeDirection face){
+		if(isFaceUpgradable(face)){
+			switch(type){
+			case OVERCLOCKER:
+				if(OCmodules < maxOCmodules)
+					return true;
+				return false;
+			case INTERNAL_ANTENNA:
+				if(internalAntennas < maxInternalAntennas)
+					return true;
+				return false;
+			case HV:
+				if(!isHV)
+					return true;
+				return false;
+			}
 		}
 		return false;
 	}
