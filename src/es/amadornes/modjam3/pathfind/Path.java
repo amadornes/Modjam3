@@ -35,7 +35,9 @@ public class Path {
 	
 	public Path clone(){
 		List<Vector3> steps = new ArrayList<Vector3>();
-		Collections.copy(steps, this.steps);;
+		for(Vector3 v : this.steps){
+			steps.add(v.clone());
+		}
 		return new Path(steps);
 	}
 	

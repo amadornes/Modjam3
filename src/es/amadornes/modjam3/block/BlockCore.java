@@ -5,6 +5,7 @@ import java.util.Random;
 
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
+import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
@@ -150,13 +151,17 @@ public class BlockCore extends BlockContainer {
 	@Override
 	public ItemStack getPickBlock(MovingObjectPosition target, World world, int x, int y, int z) {
 		TileEntityCore core = (TileEntityCore) world.getBlockTileEntity(x, y, z);
-		if(core.isRepeater()){
-			return new ItemStack(this, 1, 2);
+		if(Minecraft.getMinecraft().thePlayer.isSneaking()){
+			return core.getUpgradeOnSide(ForgeDirection.getOrientation(target.sideHit));
 		}else{
-			if(!core.isReceiver()){
-				return new ItemStack(this, 1, 1);
+			if(core.isRepeater()){
+				return new ItemStack(this, 1, 2);
 			}else{
-				return new ItemStack(this, 1, 0);
+				if(!core.isReceiver()){
+					return new ItemStack(this, 1, 1);
+				}else{
+					return new ItemStack(this, 1, 0);
+				}
 			}
 		}
 	}

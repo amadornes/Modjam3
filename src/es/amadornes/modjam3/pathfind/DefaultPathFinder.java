@@ -1,6 +1,7 @@
 package es.amadornes.modjam3.pathfind;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.minecraftforge.common.ForgeDirection;
 
@@ -17,14 +18,14 @@ public class DefaultPathFinder extends PathFinder {
 	}
 
 	@Override
-	public void pathfind() {
-		pathfind(start, new Path(Arrays.asList(new Vector3[]{start})));
+	public PathFinder pathfind() {
+		List<Vector3> p = new ArrayList<Vector3>();
+		p.add(start);
+		pathfind(start, new Path(p));
+		return this;
 	}
 	
 	private void pathfind(Vector3 loc, Path p){
-		if(p.getLength() > maxPathLength)
-			return;
-		
 		for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS){
 			Vector3 rel = loc.getRelative(dir);
 			Path path = p.clone();
@@ -34,7 +35,8 @@ public class DefaultPathFinder extends PathFinder {
 				return;
 			}
 			if(rel.isBlock(null)){//If it's air
-				pathfind(rel, path);
+				if(path.getLength() < maxPathLength)
+					pathfind(rel, path);
 			}
 		}
 	}

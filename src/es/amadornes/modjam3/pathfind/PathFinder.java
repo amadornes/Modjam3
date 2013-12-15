@@ -13,7 +13,7 @@ public abstract class PathFinder {
 		this.finish = finish;
 	}
 	
-	public abstract void pathfind();
+	public abstract PathFinder pathfind();
 	
 	public Path getShortestPath(){
 		Path shortest = null;

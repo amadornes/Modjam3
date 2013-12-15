@@ -27,6 +27,7 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.relauncher.Side;
 import es.amadornes.modjam3.lib.Blocks;
 import es.amadornes.modjam3.lib.Items;
+import es.amadornes.modjam3.pathfind.DefaultPathFinder;
 import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
@@ -87,88 +88,95 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private int ticksLived = 0;
 	private int needed = 0;
 	
-	private void suckOrEjectFluid(){
-		
-	}
-	
-	private void suckOrEjectItems(){
-		
-	}
-	
-	private void suckOrEjectItemsISided(){
-		
-	}
-	
 	private TileEntity getAttachedTileEntity(){
-		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).getTileEntity();
+		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata).getOpposite()).getTileEntity();
 	}
 	
-	private boolean canAttachedInventoryAccept(ItemStack is){
-		if(is != null){
-			TileEntity attached = getAttachedTileEntity();
-			if(attached != null){
-				if(attached instanceof IInventory){
-					IInventory inv = (IInventory) attached;
-					if(inv instanceof ISidedInventory){
-						ISidedInventory isi = (ISidedInventory) inv;
-						int oppositeSide = ((blockMetadata/2 == Math.floor(blockMetadata)/2) ? (blockMetadata + 1)%6 : (blockMetadata - 1)%6);
-						int[] slots = isi.getAccessibleSlotsFromSide(oppositeSide);
-						for(int i = 0; i < slots.length; i++){
-							if(isi.canInsertItem(i, is, oppositeSide))
-								return true;
-						}
-					}else{
-						for(int i = 0; i < inv.getSizeInventory(); i++){
-							if(inv.isItemValidForSlot(i, is))
-								return true;
+	private void suckFluid(){
+		TileEntity attached = getAttachedTileEntity();
+		if(attached != null){
+			if(attached instanceof IFluidHandler){
+				IFluidHandler te = (IFluidHandler) attached;
+				if(tank.getFluidAmount() > 0){
+					if(te.canDrain(ForgeDirection.getOrientation(blockMetadata).getOpposite(), tank.getFluid().getFluid())){
+						FluidStack drained = te.drain(ForgeDirection.getOrientation(blockMetadata), new FluidStack(tank.getFluid().getFluid(), Math.min(40, tank.getCapacity() - tank.getFluidAmount())), true);
+						tank.fill(drained, true);
+
+						updateTile(this);
+						updateTile(attached);
+					}
+				}else{
+					for(FluidTankInfo info : te.getTankInfo(ForgeDirection.getOrientation(blockMetadata))){
+						if(info.fluid != null){
+							if(info.fluid.amount > 0){
+								if(te.canDrain(ForgeDirection.getOrientation(blockMetadata).getOpposite(), info.fluid.getFluid())){
+									FluidStack drained = te.drain(ForgeDirection.getOrientation(blockMetadata), new FluidStack(info.fluid.getFluid(), Math.min(40, tank.getCapacity() - tank.getFluidAmount())), true);
+									tank.fill(drained, true);
+		
+									updateTile(this);
+									updateTile(attached);
+									return;
+								}
+							}
 						}
 					}
 				}
 			}
 		}
-		return false;
 	}
 	
-	private boolean isAttachedISided(){
-		TileEntity attached = getAttachedTileEntity();
-		if(attached != null){
-			if(attached instanceof IInventory){
-				IInventory inv = (IInventory) attached;
-				if(inv instanceof ISidedInventory){
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	
-	private boolean canAttachedTankAccept(Fluid f){
-		if(f != null){
+	private void ejectFluid(){
+		if(tank.getFluidAmount() > 0){
 			TileEntity attached = getAttachedTileEntity();
 			if(attached != null){
 				if(attached instanceof IFluidHandler){
 					IFluidHandler te = (IFluidHandler) attached;
-					return te.canFill(ForgeDirection.getOrientation(blockMetadata).getOpposite(), f);
+					if(te.canFill(ForgeDirection.getOrientation(blockMetadata).getOpposite(), tank.getFluid().getFluid())){
+						int filled = te.fill(ForgeDirection.getOrientation(blockMetadata).getOpposite(), new FluidStack(tank.getFluid().getFluid(), Math.min(tank.getFluidAmount(), 40)), true);
+						tank.drain(filled, true);
+
+						updateTile(this);
+						updateTile(attached);
+					}
 				}
 			}
 		}
-		return false;
 	}
 	
 	@Override
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
 			if(ticksLived%5 == 0){//Every 5 ticks (4 times every second)
-				updateTile(this);
-				
-				//Do auto fluid/item eject/suck
-				if(getType() == 0){
-					if(new Random().nextBoolean()){
-						suckOrEjectFluid();
+				if(isRepeater){
+					
+				}else{
+					if(!isReceiver){
+						if(hasUpgrade(UpgradeType.AUTO_SUCK)){
+							if(getType() == 0){
+								suckFluid();
+								if(new Random().nextBoolean()){
+									suckFluid();
+								}else{
+									//Suck item
+								}
+							}else if(getType() == 1){
+								
+							}else if(getType() == 2){
+								suckFluid();
+							}
+						}
 					}else{
-						suckOrEjectItems();
+						if(hasUpgrade(UpgradeType.AUTO_EJECT)){
+							if(getType() == 1){
+								
+							}else if(getType() == 2){
+								ejectFluid();
+							}
+						}
 					}
 				}
+
+				updateTile(this);
 			}
 			if(tick == needed){
 				double minticks = 16;
@@ -207,7 +215,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 										if(core.item == null){
 											core.item = item.copy();
 											core.item.stackSize = items;
-											System.out.println(core.item);
 										}else{
 											core.item.stackSize += items;
 										}
@@ -239,8 +246,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}
 	}
 	
-	private void updateTile(TileEntityCore te){
-		PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
+	private void updateTile(TileEntity te){
+		PacketDispatcher.sendPacketToAllInDimension(te.getDescriptionPacket(), worldObj.provider.dimensionId);
 	}
 	
 	private List<EntityLiving> getNearbyEntities(int radius){
@@ -291,7 +298,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	private List<TileEntityCore> getNearbyCores(int radius){
 		Vec3 thisTE = new Vector3(this).toVec3();
-		List<TileEntityCore> cores = new ArrayList<TileEntityCore>();
+		List<TileEntityCore> nearby = new ArrayList<TileEntityCore>();
 		for(int x = (xCoord - radius); x < (xCoord + radius); x++){
 			for(int y = (yCoord - radius); y < (yCoord + radius); y++){
 				for(int z = (zCoord - radius); z < (zCoord + radius); z++){
@@ -300,13 +307,21 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 						if(te instanceof TileEntityCore){
 							Vec3 tile = new Vector3(x, y, z).toVec3();
 							if(thisTE.distanceTo(tile) < radius){
-								cores.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
+								nearby.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
 							}
 						}
 					}
 				}
 			}
 		}
+
+		List<TileEntityCore> cores = new ArrayList<TileEntityCore>();
+		for(TileEntityCore c : nearby){
+			if(new DefaultPathFinder(new Vector3(this), new Vector3(c), radius).pathfind().getShortestPath() != null){
+				cores.add(c);
+			}
+		}
+		
 		return cores;
 	}
 	
@@ -940,7 +955,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public static enum UpgradeType{
 		EMPTY("empty", 0, false, false, false, 0, 0, 0),
-		OVERCLOCK("overclock", 1, false, true, false, 0, 4, 0),
+		OVERCLOCK("overclock", 1, false, true, true, 0, 4, 0),
 		AUTO_EJECT("autoeject", 2, true, false, false, 1, 0, 0),
 		AUTO_SUCK("autosuck", 3, false, true, false, 0, 1, 0),
 		INTERNAL_ANTENNA("empty", 4, true, true, true, 1, 1, 2),//TODO
