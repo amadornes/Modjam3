@@ -54,7 +54,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public int getMaxTransferrableItems(){
 		if(item != null){
-			double proportion = Math.min(defaultItems + itemsPerOC*OCmodules, 64);
+			double proportion = Math.min(defaultItems + itemsPerOC*getUpgradeAmount(UpgradeType.OVERCLOCK), 64);
 			proportion /= 64;
 			return (int) Math.floor(Math.min(proportion * item.getMaxStackSize(), item.getMaxStackSize()));
 		}
@@ -70,7 +70,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public int getMaxTransferrableMilibuckets(){
 		if(tank.getFluidAmount() > 0){
-			return defaultFluid + fluidPerOC*OCmodules;
+			return defaultFluid + fluidPerOC*getUpgradeAmount(UpgradeType.OVERCLOCK);
 		}
 		return 0;
 	}
@@ -84,28 +84,107 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private int tick = 0;
+	private int ticksLived = 0;
 	private int needed = 0;
+	
+	private void suckOrEjectFluid(){
+		
+	}
+	
+	private void suckOrEjectItems(){
+		
+	}
+	
+	private void suckOrEjectItemsISided(){
+		
+	}
+	
+	private TileEntity getAttachedTileEntity(){
+		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).getTileEntity();
+	}
+	
+	private boolean canAttachedInventoryAccept(ItemStack is){
+		if(is != null){
+			TileEntity attached = getAttachedTileEntity();
+			if(attached != null){
+				if(attached instanceof IInventory){
+					IInventory inv = (IInventory) attached;
+					if(inv instanceof ISidedInventory){
+						ISidedInventory isi = (ISidedInventory) inv;
+						int oppositeSide = ((blockMetadata/2 == Math.floor(blockMetadata)/2) ? (blockMetadata + 1)%6 : (blockMetadata - 1)%6);
+						int[] slots = isi.getAccessibleSlotsFromSide(oppositeSide);
+						for(int i = 0; i < slots.length; i++){
+							if(isi.canInsertItem(i, is, oppositeSide))
+								return true;
+						}
+					}else{
+						for(int i = 0; i < inv.getSizeInventory(); i++){
+							if(inv.isItemValidForSlot(i, is))
+								return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	private boolean isAttachedISided(){
+		TileEntity attached = getAttachedTileEntity();
+		if(attached != null){
+			if(attached instanceof IInventory){
+				IInventory inv = (IInventory) attached;
+				if(inv instanceof ISidedInventory){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	private boolean canAttachedTankAccept(Fluid f){
+		if(f != null){
+			TileEntity attached = getAttachedTileEntity();
+			if(attached != null){
+				if(attached instanceof IFluidHandler){
+					IFluidHandler te = (IFluidHandler) attached;
+					return te.canFill(ForgeDirection.getOrientation(blockMetadata).getOpposite(), f);
+				}
+			}
+		}
+		return false;
+	}
 	
 	@Override
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
-			if(tick%5 == 0){
-				PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
+			if(ticksLived%5 == 0){//Every 5 ticks (4 times every second)
+				updateTile(this);
+				
+				//Do auto fluid/item eject/suck
+				if(getType() == 0){
+					if(new Random().nextBoolean()){
+						suckOrEjectFluid();
+					}else{
+						suckOrEjectItems();
+					}
+				}
 			}
 			if(tick == needed){
 				double minticks = 16;
-				minticks -= OCmodules * OCmultiplier;
-				int mticks = (int) Math.max(0, Math.floor(minticks));
+				minticks -= getUpgradeAmount(UpgradeType.OVERCLOCK) * OCmultiplier;
+				int mticks = (int) Math.max(1, Math.floor(minticks));
 				needed = mticks + new Random().nextInt(mticks);
 				tick = 0;
 				
-				send();
+				randomTick();
 			}
 			tick++;
+			ticksLived++;
 		}
 	}
 	
-	private void send(){
+	private void randomTick(){
 		if(hasUpgrade(UpgradeType.HV)){
 			//TODO ADD UPGRADE CODE
 		}else{
@@ -117,31 +196,39 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 							TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
 							switch(getType()){
 							case 1://Items
-								if(core.canAccept(item)){
-									int freeSlots = 64;
-									if(core.item != null){
-										freeSlots = core.item.getMaxStackSize() - core.item.stackSize;
+								if(item != null){
+									if(core.canAccept(item)){
+										int freeSlots = item.getMaxStackSize();
+										if(core.item != null){
+											freeSlots = core.item.getMaxStackSize() - core.item.stackSize;
+										}
+										int items = Math.min(getTransferrableItems(), freeSlots);
+										
+										if(core.item == null){
+											core.item = item.copy();
+											core.item.stackSize = items;
+											System.out.println(core.item);
+										}else{
+											core.item.stackSize += items;
+										}
+										
+										if(item.stackSize - items == 0){
+											item = null;
+										}else{
+											item.stackSize -= items;
+										}
+										updateTile(this);
+										updateTile(core);
+										return;
 									}
-									int items = Math.min(getTransferrableItems(), freeSlots);
-									
-									if(core.item == null){
-										core.item = item.copy();
-										core.item.stackSize = items;
-									}else{
-										core.item.stackSize += items;
-									}
-									
-									if(item.stackSize - items == 0){
-										item = null;
-									}else{
-										item.stackSize -= items;
-									}
-									return;
 								}
 							case 2://Fluids
 								if(core.canAccept(tank.getFluid())){
 									int fluid = Math.min(getTransferrableMilibuckets(), core.tank.getCapacity() - core.tank.getFluidAmount());
-									
+									core.tank.fill(new FluidStack(tank.getFluid().getFluid(), fluid), true);
+									tank.drain(fluid, true);
+									updateTile(this);
+									updateTile(core);
 									return;
 								}
 							}
@@ -150,6 +237,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				}
 			}
 		}
+	}
+	
+	private void updateTile(TileEntityCore te){
+		PacketDispatcher.sendPacketToAllInDimension(getDescriptionPacket(), worldObj.provider.dimensionId);
 	}
 	
 	private List<EntityLiving> getNearbyEntities(int radius){
@@ -306,6 +397,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		if(tag.hasKey("item")){
 			NBTTagCompound item = tag.getCompoundTag("item");
 			this.item = ItemStack.loadItemStackFromNBT(item);
+		}else{
+			this.item = null;
 		}
 
 		isReceiver = tag.getBoolean("isInput");
@@ -325,6 +418,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public ItemStack getStackInSlot(int i) {
+		onInventoryChanged();
 		if(i == 0)
 			return item;
 		return null;
@@ -338,10 +432,9 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				}else{
 					item = null;
 				}
-				onInventoryChanged();
 			}
-			return item;
 		}
+		onInventoryChanged();
 		return null;
 	}
 
@@ -350,11 +443,12 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public void setInventorySlotContents(int i, ItemStack itemstack) {
-		System.out.println("Set");
 		if(!isReceiver && !isRepeater){
-			item = itemstack;
-			onInventoryChanged();
+			if(i == 0){
+				item = itemstack;
+			}
 		}
+		onInventoryChanged();
 	}
 
 	public String getInvName() {
@@ -536,7 +630,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 
 	private UpgradeType[] upgrades = new UpgradeType[4];
 	
-	private ForgeDirection[] determineUpgradableFaces(){
+	public ForgeDirection[] determineUpgradableFaces(){
 		switch(blockMetadata){
 		case 0:
 			return new ForgeDirection[]{ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.NORTH, ForgeDirection.SOUTH};
@@ -570,7 +664,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private int OCmultiplier = 4;//Tick multiplier
-	private int OCmodules = 0;//Amount of OC modules installed
 	
 	private int defaultItems = 1;
 	private int defaultFluid = 10;
@@ -579,8 +672,6 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	private void writeUpgradesToNBT(NBTTagCompound t){
 		NBTTagCompound tag = new NBTTagCompound();
-		
-		tag.setInteger("OCmodules", OCmodules);
 		
 		for(int i = 0; i < upgrades.length; i++){
 			if(upgrades[i] == null){
@@ -596,30 +687,39 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private void readUpgradesFromNBT(NBTTagCompound t){
 		NBTTagCompound tag = t.getCompoundTag("upgrades");
 		
-		OCmodules = tag.getInteger("OCmodules");
-		
 		for(int i = 0; i < upgrades.length; i++){
 			UpgradeType type = null;
 			if(tag.getInteger("upgrade" + i) >= 0){
-				type = UpgradeType.values()[tag.getInteger("upgrade" + i)];
+				type = UpgradeType.getFromDamage(tag.getInteger("upgrade" + i));
 			}
 			upgrades[i] = type;
 		}
 	}
 	
 	public boolean installUpgrade(UpgradeType type, ForgeDirection face){
-		if(isFaceUpgradable(face)){
-			switch(type){
-			case OVERCLOCKER:
-				return true;
-			case INTERNAL_ANTENNA:
-				return true;
-			case HV:
-				if(!hasUpgrade(UpgradeType.HV))
-					return true;
-				return false;
-			default:
-				return false;
+		if(type != null){
+			if(isFaceUpgradable(face)){
+				if(isRepeater){
+					if(type.repeater){
+						if(type.maxRepeater > getUpgradeAmount(type)){
+							return true;
+						}
+					}
+				}else{
+					if(!isReceiver){
+						if(type.sender){
+							if(type.maxSender > getUpgradeAmount(type)){
+								return true;
+							}
+						}
+					}else{
+						if(type.receiver){
+							if(type.maxReceiver > getUpgradeAmount(type)){
+								return true;
+							}
+						}
+					}
+				}
 			}
 		}
 		return false;
@@ -644,20 +744,25 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public void setUpgrade(UpgradeType type, ForgeDirection face){
 		int id = 0;
-		for(ForgeDirection dir : determineUpgradableFaces()){
-			if(dir == face)
-				break;
-			id++;
-		}
-		if(id < 4){
-			if(upgrades[id] == null){
-				upgrades[id] = type;
+		ForgeDirection[] faces = determineUpgradableFaces();
+		if(faces != null){
+			for(ForgeDirection dir : faces){
+				if(dir == face)
+					break;
+				id++;
+			}
+			if(id < 4){
+				if(upgrades[id] == null){
+					upgrades[id] = type;
+					updateTile(this);
+				}
 			}
 		}
 	}
 	
 	public void removeUpgrade(int id){
 		upgrades[id] = null;
+		updateTile(this);
 	}
 	
 	public ItemStack getUpgradeItemStack(int upgrade){
@@ -834,10 +939,77 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public static enum UpgradeType{
-		EMPTY,
-		OVERCLOCKER,
-		INTERNAL_ANTENNA,
-		HV;
+		EMPTY("empty", 0, false, false, false, 0, 0, 0),
+		OVERCLOCK("overclock", 1, false, true, false, 0, 4, 0),
+		AUTO_EJECT("autoeject", 2, true, false, false, 1, 0, 0),
+		AUTO_SUCK("autosuck", 3, false, true, false, 0, 1, 0),
+		INTERNAL_ANTENNA("empty", 4, true, true, true, 1, 1, 2),//TODO
+		HV("empty", 5, false, true, false, 0, 1, 0);//TODO
+		
+		private String icon;
+		private int id;
+		private boolean receiver, sender, repeater;
+		private int maxReceiver, maxSender, maxRepeater;
+		
+		private UpgradeType(String icon, int id, boolean receiver, boolean sender, boolean repeater, int maxReceiver, int maxSender, int maxRepeater) {
+			this.icon = icon;
+			this.id = id;
+			this.receiver = receiver;
+			this.sender = sender;
+			this.repeater = repeater;
+			this.maxReceiver = maxReceiver;
+			this.maxSender = maxSender;
+			this.maxRepeater = maxRepeater;
+		}
+		
+		public String getIconName(){
+			return icon;
+		}
+		
+		public int getId(){
+			return id;
+		}
+		
+		public boolean canGoOnReceiver(){
+			return receiver;
+		}
+		
+		public boolean canGoOnSender(){
+			return sender;
+		}
+		
+		public boolean canGoOnRepeater(){
+			return repeater;
+		}
+		
+		public int maxAmoutPerReceiver(){
+			return maxReceiver;
+		}
+		
+		public int maxAmoutPerSender(){
+			return maxSender;
+		}
+		
+		public int maxAmoutPerRepeater(){
+			return maxRepeater;
+		}
+		
+		public static UpgradeType getFromDamage(int damage){
+			for(UpgradeType u : values()){
+				if(u.id == damage)
+					return u;
+			}
+			return UpgradeType.EMPTY;
+		}
+		
+		public static int getHighestUpgradeID(){
+			int highest = 0;
+			for(UpgradeType u : values()){
+				if(u.id > highest)
+					highest = u.id;
+			}
+			return highest;
+		}
 	}
 	
 }

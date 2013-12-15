@@ -15,6 +15,7 @@ import net.minecraft.util.Icon;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.fluids.FluidStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import es.amadornes.modjam3.lib.Items;
@@ -69,20 +70,42 @@ public class BlockCore extends BlockContainer {
 	}
 	
 	@Override
+	public void onBlockPreDestroy(World w, int x, int y, int z, int md) {
+		TileEntityCore core = (TileEntityCore) w.getBlockTileEntity(x, y, z);
+		ForgeDirection[] faces = core.determineUpgradableFaces();
+		if(faces != null){
+			for(ForgeDirection fd : faces){
+				ItemStack upgrade = core.getUpgradeOnSide(fd);
+				if(upgrade != null){
+					EntityItem entityitem = new EntityItem(w, (double)((float)x + 0.5 + fd.offsetX), (double)((float)y + 0.5 + fd.offsetY), (double)((float)z + 0.5 + fd.offsetZ), upgrade);
+					
+					core.removeUpgradeOnSide(fd);
+					
+		            float f3 = 0.05F;
+		            entityitem.motionY = (double)((float)new Random().nextGaussian() * f3 + 0.2F);
+		            w.spawnEntityInWorld(entityitem);
+				}
+			}
+		}
+	}
+	
+	@Override
 	public boolean onBlockActivated(World w, int x, int y, int z, EntityPlayer player, int side, float hitX, float hitY, float hitZ) {
+		ItemStack item = player.inventory.getCurrentItem();
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
-			ItemStack item = player.inventory.getCurrentItem();
 			if(item != null){
 				if(item.getItem() == Items.upgrade){
 					if(item.getItemDamage() > 0){
 						TileEntityCore core = (TileEntityCore) w.getBlockTileEntity(x, y, z);
-						boolean can = core.installUpgrade(UpgradeType.values()[item.getItemDamage()], ForgeDirection.getOrientation(side));
-						core.setUpgrade(UpgradeType.values()[item.getItemDamage()], ForgeDirection.getOrientation(side));
-						if(can && !player.capabilities.isCreativeMode){
-							if(item.stackSize - 1 == 0){
-								player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
-							}else{
-								item.stackSize--;
+						boolean can = core.installUpgrade(UpgradeType.getFromDamage(item.getItemDamage()), ForgeDirection.getOrientation(side));
+						if(can){
+							core.setUpgrade(UpgradeType.getFromDamage(item.getItemDamage()), ForgeDirection.getOrientation(side));
+							if(!player.capabilities.isCreativeMode){
+								if(item.stackSize - 1 == 0){
+									player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+								}else{
+									item.stackSize--;
+								}
 							}
 						}
 						return can;
@@ -101,6 +124,21 @@ public class BlockCore extends BlockContainer {
 		                float f3 = 0.05F;
 		                entityitem.motionY = (double)((float)new Random().nextGaussian() * f3 + 0.2F);
 		                w.spawnEntityInWorld(entityitem);
+		                return true;
+					}
+				}
+			}
+		}
+		if(FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT){
+			if(item == null){
+				if(!player.isSneaking()){
+					TileEntityCore core = (TileEntityCore) w.getBlockTileEntity(x, y, z);
+					player.addChatMessage("Item: " + core.getStackInSlot(0));
+					FluidStack fs = core.getTankInfo(null)[0].fluid;
+					if(fs != null){
+						player.addChatMessage("Fluid: " + fs.amount + "x" + fs.getFluid().getName());
+					}else{
+						player.addChatMessage("Fluid: null");
 					}
 				}
 			}
