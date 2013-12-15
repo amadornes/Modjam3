@@ -1,7 +1,9 @@
 package es.amadornes.modjam3.tileentity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import net.minecraft.entity.EntityLiving;
@@ -14,6 +16,7 @@ import net.minecraft.network.INetworkManager;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.Packet132TileEntityData;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.ForgeDirection;
@@ -27,7 +30,9 @@ import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.relauncher.Side;
 import es.amadornes.modjam3.lib.Blocks;
 import es.amadornes.modjam3.lib.Items;
+import es.amadornes.modjam3.packet.PacketHandler;
 import es.amadornes.modjam3.pathfind.DefaultPathFinder;
+import es.amadornes.modjam3.pathfind.Path;
 import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
@@ -48,12 +53,12 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public int getTransferrableItems(){
 		if(item != null){
-			return Math.min(item.stackSize, getMaxTransferrableItems());
+			return Math.min(item.stackSize, getMaxTransferableItems());
 		}
 		return 0;
 	}
 	
-	public int getMaxTransferrableItems(){
+	public int getMaxTransferableItems(){
 		if(item != null){
 			double proportion = Math.min(defaultItems + itemsPerOC*getUpgradeAmount(UpgradeType.OVERCLOCK), 64);
 			proportion /= 64;
@@ -144,7 +149,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private void suckItem(){
-		
+		TileEntity attached = getAttachedTileEntity();
+		//TODO
 	}
 	
 	private void suckItemISided(){
@@ -152,7 +158,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private void ejectItem(){
-		
+		TileEntity attached = getAttachedTileEntity();
+		//TODO
 	}
 	
 	private void ejectItemISided(){
@@ -173,10 +180,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 								if(new Random().nextBoolean()){
 									suckFluid();
 								}else{
-									//Suck item
+									suckItem();
 								}
 							}else if(getType() == 1){
-								
+								suckItem();
 							}else if(getType() == 2){
 								suckFluid();
 							}
@@ -184,7 +191,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 					}else{
 						if(hasUpgrade(UpgradeType.AUTO_EJECT)){
 							if(getType() == 1){
-								
+								ejectItem();
 							}else if(getType() == 2){
 								ejectFluid();
 							}
@@ -214,10 +221,11 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}else{
 			if(!isReceiver){
 				if(hasAntenna()){
-					List<TileEntityCore> cores = getNearbyReceivingCores(getAntennaRange());
+					Map<TileEntityCore, Path> cores = getNearbyReceivingCores(getAntennaRange());
 					if(cores.size() > 0){
 						for(int timesTried = 0; timesTried < 10; timesTried++){
-							TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
+							TileEntityCore core = new ArrayList<TileEntityCore>(cores.keySet()).get(new Random().nextInt(cores.keySet().size()));
+							Path path = cores.get(core);
 							switch(getType()){
 							case 1://Items
 								if(item != null){
@@ -242,6 +250,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 										}
 										updateTile(this);
 										updateTile(core);
+										PacketDispatcher.sendPacketToAllInDimension(PacketHandler.createLightningPacket(this, path), worldObj.provider.dimensionId);
 										return;
 									}
 								}
@@ -252,6 +261,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 									tank.drain(fluid, true);
 									updateTile(this);
 									updateTile(core);
+									PacketDispatcher.sendPacketToAllInDimension(PacketHandler.createLightningPacket(this, path), worldObj.provider.dimensionId);
 									return;
 								}
 							}
@@ -286,33 +296,33 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		return entities;
 	}
 	
-	private List<TileEntityCore> getNearbyRepeaters(int radius){
-		List<TileEntityCore> cores = getNearbyCores(radius);
-		List<TileEntityCore> repeaters = new ArrayList<TileEntityCore>();
+	private Map<TileEntityCore, Path> getNearbyReceivingCores(int radius){
+		Map<TileEntityCore, Path> cores = getNearbyCores(radius);
+		Map<TileEntityCore, Path> receivers = new HashMap<TileEntityCore, Path>();
 		
-		for(TileEntityCore core : cores){
-			if(core.isRepeater){
-				repeaters.add(core);
-			}
-		}
-		
-		return repeaters;
-	}
-	
-	private List<TileEntityCore> getNearbyReceivingCores(int radius){
-		List<TileEntityCore> cores = getNearbyCores(radius);
-		List<TileEntityCore> receivers = new ArrayList<TileEntityCore>();
-		
-		for(TileEntityCore core : cores){
+		for(TileEntityCore core : cores.keySet()){
 			if(!core.isRepeater && core.isReceiver){
-				receivers.add(core);
+				receivers.put(core, cores.get(core));
 			}
 		}
 		
 		return receivers;
 	}
 	
-	private List<TileEntityCore> getNearbyCores(int radius){
+	private Map<TileEntityCore, Path> getNearbyRepeaters(int radius){
+		Map<TileEntityCore, Path> cores = getNearbyCores(radius);
+		Map<TileEntityCore, Path> repeaters = new HashMap<TileEntityCore, Path>();
+		
+		for(TileEntityCore core : cores.keySet()){
+			if(core.isRepeater){
+				repeaters.put(core, cores.get(core));
+			}
+		}
+		
+		return repeaters;
+	}
+	
+	private Map<TileEntityCore, Path> getNearbyCores(int radius){
 		Vec3 thisTE = new Vector3(this).toVec3();
 		List<TileEntityCore> nearby = new ArrayList<TileEntityCore>();
 		for(int x = (xCoord - radius); x < (xCoord + radius); x++){
@@ -321,20 +331,27 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 					TileEntity te = worldObj.getBlockTileEntity(x, y, z);
 					if(te != null){
 						if(te instanceof TileEntityCore){
-							Vec3 tile = new Vector3(x, y, z).toVec3();
-							if(thisTE.distanceTo(tile) < radius){
-								nearby.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
+							if(((TileEntityCore)te).hasAntenna()){
+								Vec3 tile = new Vector3(x, y, z).toVec3();
+								if(thisTE.distanceTo(tile) < radius){
+									nearby.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
+								}
 							}
 						}
 					}
 				}
 			}
 		}
+		if(nearby.contains(this))
+			nearby.remove(this);
 
-		List<TileEntityCore> cores = new ArrayList<TileEntityCore>();
+		Map<TileEntityCore, Path> cores = new HashMap<TileEntityCore, Path>();
+		TileEntity from = hasExternalAntenna() ? getExternalAntenna() : this;
 		for(TileEntityCore c : nearby){
-			if(new DefaultPathFinder(new Vector3(this), new Vector3(c), radius).pathfind().getShortestPath() != null){
-				cores.add(c);
+			TileEntity to = c.hasExternalAntenna() ? c.getExternalAntenna() : c;
+			Path path = new DefaultPathFinder(new Vector3(from), new Vector3(to), radius).pathfind().getShortestPath();
+			if(path != null){
+				cores.put(c, path);
 			}
 		}
 		
@@ -403,12 +420,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	public void writeToNBT(NBTTagCompound tag) {
 		super.writeToNBT(tag);
 
-		NBTTagCompound tank = new NBTTagCompound();
-		this.tank.writeToNBT(tank);
-		tag.setCompoundTag("tank", tank);
+		if(tank.getFluidAmount() > 0){
+			NBTTagCompound tank = new NBTTagCompound();
+			this.tank.writeToNBT(tank);
+			tag.setCompoundTag("tank", tank);
+		}
 		
-		NBTTagCompound item = new NBTTagCompound();
 		if(this.item != null){
+			NBTTagCompound item = new NBTTagCompound();
 			this.item.writeToNBT(item);
 			tag.setCompoundTag("item", item);
 		}
@@ -423,8 +442,12 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	public void readFromNBT(NBTTagCompound tag) {
 		super.readFromNBT(tag);
 		
-		NBTTagCompound tank = tag.getCompoundTag("tank");
-		this.tank.readFromNBT(tank);
+		if(tag.hasKey("tank")){
+			NBTTagCompound tank = tag.getCompoundTag("tank");
+			this.tank.readFromNBT(tank);
+		}else{
+			this.tank.setFluid(null);
+		}
 		
 		if(tag.hasKey("item")){
 			NBTTagCompound item = tag.getCompoundTag("item");
@@ -622,6 +645,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	public boolean hasAntenna(){
 		return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna);
+	}
+	
+	public boolean hasExternalAntenna(){
+		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna);
+	}
+	
+	public TileEntityAntenna getExternalAntenna(){
+		return (TileEntityAntenna) new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).getTileEntity();
 	}
 	
 	public int getAntennaRange(){
@@ -971,9 +1002,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}
 	}
 	
+	@Override
+	public AxisAlignedBB getRenderBoundingBox() {
+		return INFINITE_EXTENT_AABB;
+	}
+
 	public static enum UpgradeType{
 		EMPTY("empty", 0, false, false, false, 0, 0, 0),
-		OVERCLOCK("overclock", 1, false, true, true, 0, 4, 0),
+		OVERCLOCK("overclock", 1, false, true, true, 0, 4, 4),
 		AUTO_EJECT("autoeject", 2, true, false, false, 1, 0, 0),
 		AUTO_SUCK("autosuck", 3, false, true, false, 0, 1, 0),
 		INTERNAL_ANTENNA("empty", 4, true, true, true, 1, 1, 2),//TODO
@@ -1043,6 +1079,26 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			}
 			return highest;
 		}
+	}
+	
+	private boolean renderLightning = false;
+	
+	public boolean shouldRenderLightning(){
+		return renderLightning;
+	}
+	
+	public void setShouldRenderLightning(boolean should){
+		renderLightning = should;
+	}
+
+	private Path lightning_path = null;
+	
+	public Path getLightningPath() {
+		return lightning_path;
+	}
+	
+	public void setLightningPath(Path p){
+		lightning_path = p;
 	}
 	
 }

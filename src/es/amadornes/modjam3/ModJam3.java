@@ -9,10 +9,11 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
 import es.amadornes.modjam3.lib.ModInfo;
+import es.amadornes.modjam3.packet.PacketHandler;
 import es.amadornes.modjam3.proxy.CommonProxy;
 
 @Mod(modid = ModInfo.MOD_ID, name = ModInfo.NAME, version = ModInfo.VERSION)
-@NetworkMod(clientSideRequired = true, serverSideRequired = false, channels = {ModInfo.NAME})
+@NetworkMod(clientSideRequired = true, serverSideRequired = false, channels = {ModInfo.CHANNEL}, packetHandler = PacketHandler.class)
 public class ModJam3 {
 	
 	@Instance(ModInfo.MOD_ID)

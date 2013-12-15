@@ -1,7 +1,6 @@
 package es.amadornes.modjam3.pathfind;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 

@@ -12,6 +12,7 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.model.AdvancedModelLoader;
 import net.minecraftforge.client.model.IModelCustom;
 import net.minecraftforge.common.ForgeDirection;
+import net.minecraftforge.fluids.FluidRegistry;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -139,6 +140,21 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 			}
 			renderUpgrades(te);
 		GL11.glPopMatrix();
+		
+		GL11.glPushMatrix();
+			
+			GL11.glTranslated(x, y, z);
+			renderLightning(te);
+			
+		GL11.glPopMatrix();
+	}
+	
+	private void renderLightning(TileEntityCore te){
+		if(te.shouldRenderLightning()){
+			te.setShouldRenderLightning(false);
+			RenderHelper.renderLightning(FluidRegistry.WATER, te.getLightningPath());
+			System.out.println("Render");
+		}
 	}
 	
 	private void renderUpgrades(TileEntityCore te){
