@@ -22,8 +22,8 @@ public class BlockAntenna extends BlockContainer {
 	public BlockAntenna(int id) {
 		super(id, Material.iron);
 		setUnlocalizedName(ModInfo.MOD_ID + ".antenna");
-		setHardness(10F);
-		setResistance(10F);
+		setHardness(4);
+		setResistance(4);
 	}
 	
 	@Override
@@ -92,9 +92,9 @@ public class BlockAntenna extends BlockContainer {
 	}
 	
 	@Override
-	public int getDamageValue(World par1World, int par2, int par3, int par4) {
+	public int getDamageValue(World w, int x, int y, int z) {
 		
-		return 1;
+		return 0;
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })

@@ -143,6 +143,22 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}
 	}
 	
+	private void suckItem(){
+		
+	}
+	
+	private void suckItemISided(){
+		
+	}
+	
+	private void ejectItem(){
+		
+	}
+	
+	private void ejectItemISided(){
+		
+	}
+	
 	@Override
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
@@ -198,7 +214,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}else{
 			if(!isReceiver){
 				if(hasAntenna()){
-					List<TileEntityCore> cores = getNearbyReceivingCores(8);
+					List<TileEntityCore> cores = getNearbyReceivingCores(getAntennaRange());
 					if(cores.size() > 0){
 						for(int timesTried = 0; timesTried < 10; timesTried++){
 							TileEntityCore core = cores.get(new Random().nextInt(cores.size()));
@@ -399,6 +415,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 
 		tag.setBoolean("isInput", isReceiver);
 		tag.setBoolean("isRepeater", isRepeater);
+		tag.setInteger("metadata", blockMetadata);
 		writeUpgradesToNBT(tag);
 	}
 	
@@ -418,6 +435,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 
 		isReceiver = tag.getBoolean("isInput");
 		isRepeater = tag.getBoolean("isRepeater");
+		blockMetadata = tag.getInteger("metadata");
 		readUpgradesFromNBT(tag);
 	}
 	
@@ -603,11 +621,11 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public boolean hasAntenna(){
-		return true;//return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna); FIXME
+		return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna);
 	}
 	
 	public int getAntennaRange(){
-		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.UP).isBlock(Blocks.antenna) ? 8 : 0);
+		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna) ? 8 : 0);
 	}
 	
 	public boolean isReceiver(){
