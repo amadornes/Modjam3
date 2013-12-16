@@ -35,7 +35,7 @@ public class DefaultPathFinder extends PathFinder {
 				return;
 			}
 			if(rel.isBlock(null)){//If it's air
-				if(path.getLength() < maxPathLength)
+				if(path.getLength() <= maxPathLength)
 					pathfind(rel, path);
 			}
 		}
