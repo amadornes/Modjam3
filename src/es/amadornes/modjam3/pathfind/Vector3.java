@@ -142,5 +142,14 @@ public class Vector3 {
 	public Vec3 toVec3(){
 		return Vec3.createVectorHelper(x, y, z);
 	}
+	
+	@Override
+	public String toString() {
+		String s = "Vector3{";
+		if(hasWorld())
+			s += "w=" + w.provider.dimensionId + ";";
+		s += "x=" + x + ";y=" + y + ";z=" + z + "}";
+		return s;
+	}
 
 }

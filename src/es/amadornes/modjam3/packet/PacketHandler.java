@@ -56,8 +56,7 @@ public class PacketHandler implements IPacketHandler {
             	p.addStep(new Vector3(x, y, z, te.worldObj));
         	}
         	
-        	te.setLightningPath(p);
-        	te.setShouldRenderLightning(true);
+        	te.addLightningEffect(p);
         }catch(Exception ex){
         	ex.printStackTrace();
         }

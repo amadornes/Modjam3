@@ -7,6 +7,7 @@ import java.util.List;
 public class Path {
 
 	private List<Vector3> steps;
+	public List<Vector3> visited = new ArrayList<Vector3>();
 	
 	public Path(List<Vector3> steps) {
 		this.steps = steps;
@@ -30,6 +31,7 @@ public class Path {
 	
 	public void addStep(Vector3 vec){
 		steps.add(vec);
+		visited.add(vec);
 	}
 	
 	public Path clone(){

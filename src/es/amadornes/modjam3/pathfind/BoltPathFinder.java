@@ -3,16 +3,17 @@ package es.amadornes.modjam3.pathfind;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.block.Block;
 import net.minecraftforge.common.ForgeDirection;
 
 /**
  * This pathfinder searches only in empty blocks and with a set max path length
  */
-public class DefaultPathFinder extends PathFinder {
+public class BoltPathFinder extends PathFinder {
 	
 	private int maxPathLength = 16;
 	
-	public DefaultPathFinder(Vector3 start, Vector3 finish, int maxPathLength) {
+	public BoltPathFinder(Vector3 start, Vector3 finish, int maxPathLength) {
 		super(start, finish);
 		this.maxPathLength = maxPathLength;
 	}
@@ -21,7 +22,9 @@ public class DefaultPathFinder extends PathFinder {
 	public PathFinder pathfind() {
 		List<Vector3> p = new ArrayList<Vector3>();
 		p.add(start);
-		pathfind(start, new Path(p));
+		Path pa = new Path(p);
+		pa.visited.add(start);
+		pathfind(start, pa);
 		return this;
 	}
 	
@@ -35,7 +38,7 @@ public class DefaultPathFinder extends PathFinder {
 					paths.add(path);
 					return;
 				}
-				if(rel.isBlock(null)){//If it's air
+				if(rel.isBlock(null) || rel.getBlock().isAirBlock(loc.getWorld(), rel.getBlockX(), rel.getBlockY(), rel.getBlockZ()) || rel.isBlock(Block.blockIron)){//If it's air
 					if(path.getLength() <= maxPathLength)
 						pathfind(rel, path);
 				}

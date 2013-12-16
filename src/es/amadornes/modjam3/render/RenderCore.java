@@ -1,5 +1,8 @@
 package es.amadornes.modjam3.render;
 
+import java.util.ArrayList;
+import java.util.Map;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.Tessellator;
@@ -19,6 +22,8 @@ import org.lwjgl.opengl.GL12;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import es.amadornes.modjam3.lib.ModInfo;
+import es.amadornes.modjam3.pathfind.Path;
+import es.amadornes.modjam3.pathfind.Vector3;
 import es.amadornes.modjam3.tileentity.TileEntityCore;
 
 public class RenderCore extends TileEntitySpecialRenderer implements IItemRenderer {
@@ -143,17 +148,13 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 		
 		GL11.glPushMatrix();
 			
-			GL11.glTranslated(x, y, z);
-			renderLightning(te);
-			
 		GL11.glPopMatrix();
 	}
 	
 	private void renderLightning(TileEntityCore te){
-		if(te.shouldRenderLightning()){
-			te.setShouldRenderLightning(false);
-			RenderHelper.renderLightning(FluidRegistry.WATER, te.getLightningPath());
-			System.out.println("Render");
+		Map<Path, Integer> list = te.getLightningEffects();
+		for(Path p : list.keySet()){
+			
 		}
 	}
 	
