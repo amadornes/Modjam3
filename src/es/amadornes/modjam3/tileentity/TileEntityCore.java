@@ -31,11 +31,13 @@ import cpw.mods.fml.relauncher.Side;
 import es.amadornes.modjam3.lib.Blocks;
 import es.amadornes.modjam3.lib.Items;
 import es.amadornes.modjam3.packet.PacketHandler;
-import es.amadornes.modjam3.pathfind.DefaultPathFinder;
+import es.amadornes.modjam3.pathfind.BoltPathFinder;
 import es.amadornes.modjam3.pathfind.Path;
 import es.amadornes.modjam3.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
+	
+	private Random randomizer = new Random();
 	
 	private FluidTank tank = new FluidTank(8000);
 	private ItemStack item;
@@ -168,6 +170,11 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	
 	@Override
 	public void updateEntity() {
+		if(FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT){
+			if(ticksLived%5 == 0){
+				tickLightning();
+			}
+		}
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
 			if(ticksLived%5 == 0){//Every 5 ticks (4 times every second)
 				if(isRepeater){
@@ -177,7 +184,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 						if(hasUpgrade(UpgradeType.AUTO_SUCK)){
 							if(getType() == 0){
 								suckFluid();
-								if(new Random().nextBoolean()){
+								if(randomizer.nextBoolean()){
 									suckFluid();
 								}else{
 									suckItem();
@@ -205,14 +212,14 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				double minticks = 16;
 				minticks -= getUpgradeAmount(UpgradeType.OVERCLOCK) * OCmultiplier;
 				int mticks = (int) Math.max(1, Math.floor(minticks));
-				needed = mticks + new Random().nextInt(mticks);
+				needed = mticks + randomizer.nextInt(mticks);
 				tick = 0;
 				
 				randomTick();
 			}
 			tick++;
-			ticksLived++;
 		}
+		ticksLived++;
 	}
 	
 	private void randomTick(){
@@ -223,46 +230,50 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 				if(hasAntenna()){
 					Map<TileEntityCore, Path> cores = getNearbyReceivingCores(getAntennaRange());
 					if(cores.size() > 0){
-						for(int timesTried = 0; timesTried < 10; timesTried++){
-							TileEntityCore core = new ArrayList<TileEntityCore>(cores.keySet()).get(new Random().nextInt(cores.keySet().size()));
-							Path path = cores.get(core);
-							switch(getType()){
-							case 1://Items
-								if(item != null){
-									if(core.canAccept(item)){
-										int freeSlots = item.getMaxStackSize();
-										if(core.item != null){
-											freeSlots = core.item.getMaxStackSize() - core.item.stackSize;
+						List<TileEntityCore> visited = new ArrayList<TileEntityCore>();
+						while(visited.size() < cores.size()){
+							TileEntityCore core = new ArrayList<TileEntityCore>(cores.keySet()).get(randomizer.nextInt(cores.keySet().size()));
+							if(!visited.contains(core)){
+								visited.add(core);
+								Path path = cores.get(core);
+								switch(getType()){
+								case 1://Items
+									if(item != null){
+										if(core.canAccept(item)){
+											int freeSlots = item.getMaxStackSize();
+											if(core.item != null){
+												freeSlots = core.item.getMaxStackSize() - core.item.stackSize;
+											}
+											int items = Math.min(getTransferrableItems(), freeSlots);
+											
+											if(core.item == null){
+												core.item = item.copy();
+												core.item.stackSize = items;
+											}else{
+												core.item.stackSize += items;
+											}
+											
+											if(item.stackSize - items == 0){
+												item = null;
+											}else{
+												item.stackSize -= items;
+											}
+											updateTile(this);
+											updateTile(core);
+											PacketDispatcher.sendPacketToAllInDimension(PacketHandler.createLightningPacket(this, path), worldObj.provider.dimensionId);
+											return;
 										}
-										int items = Math.min(getTransferrableItems(), freeSlots);
-										
-										if(core.item == null){
-											core.item = item.copy();
-											core.item.stackSize = items;
-										}else{
-											core.item.stackSize += items;
-										}
-										
-										if(item.stackSize - items == 0){
-											item = null;
-										}else{
-											item.stackSize -= items;
-										}
+									}
+								case 2://Fluids
+									if(core.canAccept(tank.getFluid())){
+										int fluid = Math.min(getTransferrableMilibuckets(), core.tank.getCapacity() - core.tank.getFluidAmount());
+										core.tank.fill(new FluidStack(tank.getFluid().getFluid(), fluid), true);
+										tank.drain(fluid, true);
 										updateTile(this);
 										updateTile(core);
 										PacketDispatcher.sendPacketToAllInDimension(PacketHandler.createLightningPacket(this, path), worldObj.provider.dimensionId);
 										return;
 									}
-								}
-							case 2://Fluids
-								if(core.canAccept(tank.getFluid())){
-									int fluid = Math.min(getTransferrableMilibuckets(), core.tank.getCapacity() - core.tank.getFluidAmount());
-									core.tank.fill(new FluidStack(tank.getFluid().getFluid(), fluid), true);
-									tank.drain(fluid, true);
-									updateTile(this);
-									updateTile(core);
-									PacketDispatcher.sendPacketToAllInDimension(PacketHandler.createLightningPacket(this, path), worldObj.provider.dimensionId);
-									return;
 								}
 							}
 						}
@@ -334,7 +345,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 							if(((TileEntityCore)te).hasAntenna()){
 								Vec3 tile = new Vector3(x, y, z).toVec3();
 								if(thisTE.distanceTo(tile) < radius){
-									nearby.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
+									if(((TileEntityCore) worldObj.getBlockTileEntity(x, y, z)).hasAntenna())
+										nearby.add((TileEntityCore) worldObj.getBlockTileEntity(x, y, z));
 								}
 							}
 						}
@@ -349,7 +361,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		TileEntity from = hasExternalAntenna() ? getExternalAntenna() : this;
 		for(TileEntityCore c : nearby){
 			TileEntity to = c.hasExternalAntenna() ? c.getExternalAntenna() : c;
-			Path path = new DefaultPathFinder(new Vector3(from), new Vector3(to), radius).pathfind().getShortestPath();
+			Path path = new BoltPathFinder(new Vector3(from), new Vector3(to), radius).pathfind().getShortestPath();
 			if(path != null){
 				cores.put(c, path);
 			}
@@ -1081,24 +1093,30 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		}
 	}
 	
-	private boolean renderLightning = false;
+	private Map<Path, Integer> lightning = new HashMap<Path, Integer>();
 	
-	public boolean shouldRenderLightning(){
-		return renderLightning;
+	public void addLightningEffect(Path path){
+		lightning.put(path, new Integer(0));
 	}
 	
-	public void setShouldRenderLightning(boolean should){
-		renderLightning = should;
-	}
-
-	private Path lightning_path = null;
-	
-	public Path getLightningPath() {
-		return lightning_path;
+	public Map<Path, Integer> getLightningEffects(){
+		return lightning;
 	}
 	
-	public void setLightningPath(Path p){
-		lightning_path = p;
+	public void tickLightning(){
+		Map<Path, Integer> nLightning = new HashMap<Path, Integer>();
+		for(Path p : lightning.keySet()){
+			int val = lightning.get(p).intValue();
+			int length = p.getSteps().size();
+			if(val < length * 2){
+				val++;
+			}
+			if(val == length*2){
+				nLightning.put(p, new Integer(val));
+			}
+		}
+		lightning.clear();
+		lightning = nLightning;
 	}
 	
 }
