@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.pathfind;
+package es.amadornes.transvoltz.pathfind;
 
 import java.util.ArrayList;
 import java.util.List;

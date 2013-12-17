@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.block;
+package es.amadornes.transvoltz.block;
 
 import java.util.List;
 import java.util.Random;
@@ -19,11 +19,11 @@ import net.minecraftforge.common.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
-import es.amadornes.modjam3.lib.Items;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.proxy.ClientProxy;
-import es.amadornes.modjam3.tileentity.TileEntityCore;
-import es.amadornes.modjam3.tileentity.TileEntityCore.UpgradeType;
+import es.amadornes.transvoltz.lib.Items;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.proxy.ClientProxy;
+import es.amadornes.transvoltz.tileentity.TileEntityCore;
+import es.amadornes.transvoltz.tileentity.TileEntityCore.UpgradeType;
 
 public class BlockCore extends BlockContainer {
 	
@@ -152,16 +152,16 @@ public class BlockCore extends BlockContainer {
 	public ItemStack getPickBlock(MovingObjectPosition target, World world, int x, int y, int z) {
 		TileEntityCore core = (TileEntityCore) world.getBlockTileEntity(x, y, z);
 		if(Minecraft.getMinecraft().thePlayer.isSneaking()){
-			return core.getUpgradeOnSide(ForgeDirection.getOrientation(target.sideHit));
+			if(core.getUpgradeOnSide(ForgeDirection.getOrientation(target.sideHit)) != null)
+				return core.getUpgradeOnSide(ForgeDirection.getOrientation(target.sideHit));
+		}
+		if(core.isRepeater()){
+			return new ItemStack(this, 1, 2);
 		}else{
-			if(core.isRepeater()){
-				return new ItemStack(this, 1, 2);
+			if(!core.isReceiver()){
+				return new ItemStack(this, 1, 1);
 			}else{
-				if(!core.isReceiver()){
-					return new ItemStack(this, 1, 1);
-				}else{
-					return new ItemStack(this, 1, 0);
-				}
+				return new ItemStack(this, 1, 0);
 			}
 		}
 	}

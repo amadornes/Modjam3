@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.pathfind;
+package es.amadornes.transvoltz.pathfind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,6 @@ public class BoltPathFinder extends PathFinder {
 		List<Vector3> p = new ArrayList<Vector3>();
 		p.add(start);
 		Path pa = new Path(p);
-		pa.visited.add(start);
 		pathfind(start, pa);
 		return this;
 	}
@@ -38,7 +37,7 @@ public class BoltPathFinder extends PathFinder {
 					paths.add(path);
 					return;
 				}
-				if(rel.isBlock(null) || rel.getBlock().isAirBlock(loc.getWorld(), rel.getBlockX(), rel.getBlockY(), rel.getBlockZ()) || rel.isBlock(Block.blockIron)){//If it's air
+				if(rel.isBlock(null) || rel.isBlock(Block.blockIron)){//If it's air
 					if(path.getLength() <= maxPathLength)
 						pathfind(rel, path);
 				}

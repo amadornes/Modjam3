@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.tileentity;
+package es.amadornes.transvoltz.tileentity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,12 +28,12 @@ import net.minecraftforge.fluids.IFluidHandler;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.network.PacketDispatcher;
 import cpw.mods.fml.relauncher.Side;
-import es.amadornes.modjam3.lib.Blocks;
-import es.amadornes.modjam3.lib.Items;
-import es.amadornes.modjam3.packet.PacketHandler;
-import es.amadornes.modjam3.pathfind.BoltPathFinder;
-import es.amadornes.modjam3.pathfind.Path;
-import es.amadornes.modjam3.pathfind.Vector3;
+import es.amadornes.transvoltz.lib.Blocks;
+import es.amadornes.transvoltz.lib.Items;
+import es.amadornes.transvoltz.packet.PacketHandler;
+import es.amadornes.transvoltz.pathfind.BoltPathFinder;
+import es.amadornes.transvoltz.pathfind.Path;
+import es.amadornes.transvoltz.pathfind.Vector3;
 
 public class TileEntityCore extends TileEntity implements ISidedInventory, IFluidHandler {
 	
@@ -171,9 +171,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	@Override
 	public void updateEntity() {
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.CLIENT){
-			if(ticksLived%5 == 0){
-				tickLightning();
-			}
+			tickLightning();
 		}
 		if(FMLCommonHandler.instance().getEffectiveSide() == Side.SERVER){
 			if(ticksLived%5 == 0){//Every 5 ticks (4 times every second)
@@ -223,9 +221,9 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	private void randomTick(){
-		if(hasUpgrade(UpgradeType.HV)){
+		/*if(hasUpgrade(UpgradeType.HV)){
 			//TODO ADD UPGRADE CODE
-		}else{
+		}else*/{
 			if(!isReceiver){
 				if(hasAntenna()){
 					Map<TileEntityCore, Path> cores = getNearbyReceivingCores(getAntennaRange());
@@ -358,10 +356,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			nearby.remove(this);
 
 		Map<TileEntityCore, Path> cores = new HashMap<TileEntityCore, Path>();
-		TileEntity from = hasExternalAntenna() ? getExternalAntenna() : this;
 		for(TileEntityCore c : nearby){
-			TileEntity to = c.hasExternalAntenna() ? c.getExternalAntenna() : c;
-			Path path = new BoltPathFinder(new Vector3(from), new Vector3(to), radius).pathfind().getShortestPath();
+			Path path = new BoltPathFinder(new Vector3(getAntenna()), new Vector3(c.getAntenna()), radius).pathfind().getShortestPath();
 			if(path != null){
 				cores.put(c, path);
 			}
@@ -656,19 +652,15 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 	
 	public boolean hasAntenna(){
-		return hasUpgrade(UpgradeType.INTERNAL_ANTENNA) || new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna);
-	}
-	
-	public boolean hasExternalAntenna(){
 		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna);
 	}
 	
-	public TileEntityAntenna getExternalAntenna(){
+	public TileEntityAntenna getAntenna(){
 		return (TileEntityAntenna) new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).getTileEntity();
 	}
 	
 	public int getAntennaRange(){
-		return getUpgradeAmount(UpgradeType.INTERNAL_ANTENNA)*4 + (new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna) ? 8 : 0);
+		return new Vector3(this).getRelative(ForgeDirection.getOrientation(blockMetadata)).isBlock(Blocks.antenna) ? 6 : 0;
 	}
 	
 	public boolean isReceiver(){
@@ -1020,20 +1012,21 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	}
 
 	public static enum UpgradeType{
-		EMPTY("empty", 0, false, false, false, 0, 0, 0),
-		OVERCLOCK("overclock", 1, false, true, true, 0, 4, 4),
-		AUTO_EJECT("autoeject", 2, true, false, false, 1, 0, 0),
-		AUTO_SUCK("autosuck", 3, false, true, false, 0, 1, 0),
-		INTERNAL_ANTENNA("empty", 4, true, true, true, 1, 1, 2),//TODO
-		HV("empty", 5, false, true, false, 0, 1, 0);//TODO
+		EMPTY("empty", "Empty upgrade", 0, false, false, false, 0, 0, 0),
+		OVERCLOCK("overclock", "Overclocker upgrade", 1, false, true, true, 0, 4, 4),
+		AUTO_EJECT("autoeject", "Auto eject upgrade", 2, true, false, false, 1, 0, 0),
+		AUTO_SUCK("autoextract", "Auto extract upgrade", 3, false, true, false, 0, 1, 0);
+		//HV("empty", "HV upgrade", 4, false, true, false, 0, 1, 0);//TODO
 		
 		private String icon;
+		private String displayname;
 		private int id;
 		private boolean receiver, sender, repeater;
 		private int maxReceiver, maxSender, maxRepeater;
 		
-		private UpgradeType(String icon, int id, boolean receiver, boolean sender, boolean repeater, int maxReceiver, int maxSender, int maxRepeater) {
+		private UpgradeType(String icon, String displayname, int id, boolean receiver, boolean sender, boolean repeater, int maxReceiver, int maxSender, int maxRepeater) {
 			this.icon = icon;
+			this.displayname = displayname;
 			this.id = id;
 			this.receiver = receiver;
 			this.sender = sender;
@@ -1075,6 +1068,10 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 			return maxRepeater;
 		}
 		
+		public String getDisplayName() {
+			return displayname;
+		}
+		
 		public static UpgradeType getFromDamage(int damage){
 			for(UpgradeType u : values()){
 				if(u.id == damage)
@@ -1096,7 +1093,7 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 	private Map<Path, Integer> lightning = new HashMap<Path, Integer>();
 	
 	public void addLightningEffect(Path path){
-		lightning.put(path, new Integer(0));
+		lightning.put(path, new Integer(1));
 	}
 	
 	public Map<Path, Integer> getLightningEffects(){
@@ -1108,10 +1105,8 @@ public class TileEntityCore extends TileEntity implements ISidedInventory, IFlui
 		for(Path p : lightning.keySet()){
 			int val = lightning.get(p).intValue();
 			int length = p.getSteps().size();
-			if(val < length * 2){
-				val++;
-			}
-			if(val == length*2){
+			val++;
+			if(val != length * 2){
 				nLightning.put(p, new Integer(val));
 			}
 		}

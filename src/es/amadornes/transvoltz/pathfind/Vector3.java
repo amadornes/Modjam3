@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.pathfind;
+package es.amadornes.transvoltz.pathfind;
 
 import net.minecraft.block.Block;
 import net.minecraft.tileentity.TileEntity;

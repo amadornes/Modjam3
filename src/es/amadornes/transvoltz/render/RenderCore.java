@@ -1,6 +1,5 @@
-package es.amadornes.modjam3.render;
+package es.amadornes.transvoltz.render;
 
-import java.util.ArrayList;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
@@ -15,16 +14,14 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.model.AdvancedModelLoader;
 import net.minecraftforge.client.model.IModelCustom;
 import net.minecraftforge.common.ForgeDirection;
-import net.minecraftforge.fluids.FluidRegistry;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
 import cpw.mods.fml.client.FMLClientHandler;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.pathfind.Path;
-import es.amadornes.modjam3.pathfind.Vector3;
-import es.amadornes.modjam3.tileentity.TileEntityCore;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.pathfind.Path;
+import es.amadornes.transvoltz.tileentity.TileEntityCore;
 
 public class RenderCore extends TileEntitySpecialRenderer implements IItemRenderer {
 	
@@ -148,13 +145,20 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 		
 		GL11.glPushMatrix();
 			
+			renderLightning(te, x, y, z);
+		
 		GL11.glPopMatrix();
 	}
 	
-	private void renderLightning(TileEntityCore te){
+	private void renderLightning(TileEntityCore te, double x, double y, double z){
 		Map<Path, Integer> list = te.getLightningEffects();
 		for(Path p : list.keySet()){
-			
+			GL11.glPushMatrix();
+				GL11.glTranslated(x, y, z);
+		        GL11.glTranslated(0.5, 0.5, 0.5);
+				GL11.glTranslated(0, 1, 0);
+				RenderHelper.renderLightning(null, p, list.get(p));
+			GL11.glPopMatrix();
 		}
 	}
 	
@@ -228,10 +232,10 @@ public class RenderCore extends TileEntitySpecialRenderer implements IItemRender
 	public void renderItem(ItemRenderType type, ItemStack item, Object... data) {
 		switch(type){
 		case ENTITY:
-			//FIXME ADD RENDER
+			render(-0.5, 1, -0.5, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case EQUIPPED:
-			//FIXME ADD RENDER
+			render(0, 1, 0, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case EQUIPPED_FIRST_PERSON:
 			render(0, 1, 0, 180, 0, 0, 1, item.getItemDamage());

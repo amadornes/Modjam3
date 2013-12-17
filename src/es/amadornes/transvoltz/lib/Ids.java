@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.lib;
+package es.amadornes.transvoltz.lib;
 
 public class Ids {
 

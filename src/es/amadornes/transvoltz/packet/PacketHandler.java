@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.packet;
+package es.amadornes.transvoltz.packet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,10 +13,10 @@ import net.minecraft.network.packet.Packet250CustomPayload;
 import net.minecraft.tileentity.TileEntity;
 import cpw.mods.fml.common.network.IPacketHandler;
 import cpw.mods.fml.common.network.Player;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.pathfind.Path;
-import es.amadornes.modjam3.pathfind.Vector3;
-import es.amadornes.modjam3.tileentity.TileEntityCore;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.pathfind.Path;
+import es.amadornes.transvoltz.pathfind.Vector3;
+import es.amadornes.transvoltz.tileentity.TileEntityCore;
 
 public class PacketHandler implements IPacketHandler {
 

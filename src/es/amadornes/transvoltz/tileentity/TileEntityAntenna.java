@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.tileentity;
+package es.amadornes.transvoltz.tileentity;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.INetworkManager;

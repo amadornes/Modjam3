@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.model;
+package es.amadornes.transvoltz.model;
 
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelRenderer;

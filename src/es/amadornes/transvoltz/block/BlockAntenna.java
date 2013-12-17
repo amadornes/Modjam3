@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.block;
+package es.amadornes.transvoltz.block;
 
 import java.util.List;
 
@@ -10,12 +10,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeDirection;
-import es.amadornes.modjam3.lib.Blocks;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.pathfind.Vector3;
-import es.amadornes.modjam3.proxy.ClientProxy;
-import es.amadornes.modjam3.tileentity.TileEntityAntenna;
-import es.amadornes.modjam3.tileentity.TileEntityCore;
+import es.amadornes.transvoltz.lib.Blocks;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.pathfind.Vector3;
+import es.amadornes.transvoltz.proxy.ClientProxy;
+import es.amadornes.transvoltz.tileentity.TileEntityAntenna;
+import es.amadornes.transvoltz.tileentity.TileEntityCore;
 
 public class BlockAntenna extends BlockContainer {
 	

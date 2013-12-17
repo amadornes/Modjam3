@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.render;
+package es.amadornes.transvoltz.render;
 
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.item.ItemStack;
@@ -9,9 +9,9 @@ import net.minecraftforge.client.IItemRenderer;
 import org.lwjgl.opengl.GL11;
 
 import cpw.mods.fml.client.FMLClientHandler;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.model.ModelAntenna;
-import es.amadornes.modjam3.tileentity.TileEntityAntenna;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.model.ModelAntenna;
+import es.amadornes.transvoltz.tileentity.TileEntityAntenna;
 
 public class RenderAntenna extends TileEntitySpecialRenderer implements IItemRenderer {
 	
@@ -29,13 +29,13 @@ public class RenderAntenna extends TileEntitySpecialRenderer implements IItemRen
 	public void renderItem(ItemRenderType type, ItemStack item, Object... data) {
 		switch(type){
 		case ENTITY:
-			//FIXME ADD RENDER
+			render(0, 1.25, 0, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case EQUIPPED:
-			//FIXME ADD RENDER
+			render(0.5, 1.25, 0.5, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case EQUIPPED_FIRST_PERSON:
-			render(0, 1, 0, 180, 0, 0, 1, item.getItemDamage());
+			render(0.5, 1.25, 0.5, 180, 0, 0, 1, item.getItemDamage());
 			return;
 		case FIRST_PERSON_MAP:
 			return;
@@ -59,9 +59,22 @@ public class RenderAntenna extends TileEntitySpecialRenderer implements IItemRen
 			
 			FMLClientHandler.instance().getClient().renderEngine.bindTexture(texture);
 			if(isDouble){
-				
+				GL11.glPushMatrix();
+					GL11.glRotated(45, 1, 0, 0);
+					GL11.glScaled(2, 2, 2);
+					GL11.glTranslated(0, -1.5, 0);
+					model.render();
+				GL11.glPopMatrix();
+				GL11.glPushMatrix();
+					GL11.glRotated(-45, 1, 0, 0);
+					GL11.glTranslated(0, -1.5, 0);
+					GL11.glScaled(2, 2, 2);
+					model.render();
+				GL11.glPopMatrix();
 			}else{
-				
+				GL11.glTranslated(0, -1.5, 0);
+				GL11.glScaled(2, 2, 2);
+				model.render();
 			}
 			
 		GL11.glPopMatrix();

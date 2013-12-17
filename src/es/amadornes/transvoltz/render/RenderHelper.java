@@ -1,7 +1,6 @@
-package es.amadornes.modjam3.render;
+package es.amadornes.transvoltz.render;
 
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.entity.RenderLightningBolt;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fluids.Fluid;
@@ -9,8 +8,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
 
-import es.amadornes.modjam3.pathfind.Path;
-import es.amadornes.modjam3.pathfind.Vector3;
+import es.amadornes.transvoltz.pathfind.Path;
+import es.amadornes.transvoltz.pathfind.Vector3;
 
 public class RenderHelper {
 
@@ -18,18 +17,26 @@ public class RenderHelper {
 		int pathLength = path.getSteps().size();
 		
 		GL11.glPushMatrix();
+			double minx = Double.MAX_VALUE;
+			double miny = Double.MAX_VALUE;
+			double minz = Double.MAX_VALUE;
 			double maxx = Double.MIN_VALUE;
 			double maxy = Double.MIN_VALUE;
 			double maxz = Double.MIN_VALUE;
 			for(Vector3 vec : path.getSteps()){
+				minx = Math.min(minx, vec.getX());
+				miny = Math.min(miny, vec.getY());
+				minz = Math.min(minz, vec.getZ());
 				maxx = Math.max(maxx, vec.getX());
 				maxy = Math.max(maxy, vec.getY());
 				maxz = Math.max(maxz, vec.getZ());
 			}
-			Vector3 last = null;//TODO CAMBIAR MAX POR MIN SI FALLA
+			Vector3 firstOfPath = path.getSteps().get(0);
+			GL11.glTranslated(-(firstOfPath.getX() - minx), -(firstOfPath.getY() - miny), -(firstOfPath.getZ() - minz));
+			
+			Vector3 last = null;
 			int minq = Math.max(progress - pathLength, 0);
 			int maxq = pathLength - Math.abs(Math.min(progress - pathLength, 0));
-			System.out.println(minq + " - " + maxq);
 			for(int q = minq; q < maxq; q++){
 				Vector3 vec = path.getSteps().get(q);
 				if(last != null){
@@ -38,17 +45,60 @@ public class RenderHelper {
 			        GL11.glDisable(GL11.GL_LIGHTING);
 			        GL11.glEnable(GL11.GL_BLEND);
 			        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
-			        
-                    tessellator.startDrawing(9);
-	                    tessellator.setColorRGBA_F(1F, 1F, 1F, 1F);
-	                    //tessellator.addVertex(last.getX() - maxx, last.getY() - maxy, last.getZ() - maxz);
-	                    //tessellator.addVertex(vec.getX() - maxx, vec.getY() - maxy, vec.getZ() - maxz);
-	                    tessellator.addVertex(0.5, 1, 0.5);
-	                    tessellator.addVertex(0.5, 2, 0.5);
-	                    tessellator.addVertex(0.5, 2, 0.5);
-	                    tessellator.addVertex(0.5, 1, 0.5);
-	                    System.out.println("Render");
-                    tessellator.draw();
+                    GL11.glPushMatrix();
+	                    tessellator.startDrawingQuads();
+		                    tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+		                    tessellator.addVertex(last.getX() - minx, last.getY() - miny - 0.0625, last.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx, vec.getY() - miny - 0.0625, vec.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx, vec.getY() - miny + 0.0625, vec.getZ() - minz);
+		                    tessellator.addVertex(last.getX() - minx, last.getY() - miny + 0.0625, last.getZ() - minz);
+		                tessellator.draw();
+	        		GL11.glPopMatrix();
+	                GL11.glPushMatrix();
+		                tessellator.startDrawingQuads();
+		                    tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+		                    tessellator.addVertex(last.getX() - minx - 0.0625, last.getY() - miny, last.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx - 0.0625, vec.getY() - miny, vec.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx + 0.0625, vec.getY() - miny, vec.getZ() - minz);
+		                    tessellator.addVertex(last.getX() - minx + 0.0625, last.getY() - miny, last.getZ() - minz);
+		                tessellator.draw();
+		    		GL11.glPopMatrix();
+		            GL11.glPushMatrix();
+			            tessellator.startDrawingQuads();
+			                tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+			                tessellator.addVertex(last.getX() - minx, last.getY() - miny, last.getZ() - minz - 0.0625);
+			                tessellator.addVertex(vec.getX() - minx, vec.getY() - miny, vec.getZ() - minz - 0.0625);
+			                tessellator.addVertex(vec.getX() - minx, vec.getY() - miny, vec.getZ() - minz + 0.0625);
+			                tessellator.addVertex(last.getX() - minx, last.getY() - miny, last.getZ() - minz + 0.0625);
+			            tessellator.draw();
+					GL11.glPopMatrix();
+	                GL11.glPushMatrix();
+		                tessellator.startDrawingQuads();
+		                    tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+		                    tessellator.addVertex(last.getX() - minx, last.getY() - miny + 0.0625, last.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx, vec.getY() - miny + 0.0625, vec.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx, vec.getY() - miny - 0.0625, vec.getZ() - minz);
+		                    tessellator.addVertex(last.getX() - minx, last.getY() - miny - 0.0625, last.getZ() - minz);
+		                tessellator.draw();
+		    		GL11.glPopMatrix();
+		            GL11.glPushMatrix();
+		                tessellator.startDrawingQuads();
+		                    tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+		                    tessellator.addVertex(last.getX() - minx + 0.0625, last.getY() - miny, last.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx + 0.0625, vec.getY() - miny, vec.getZ() - minz);
+		                    tessellator.addVertex(vec.getX() - minx - 0.0625, vec.getY() - miny, vec.getZ() - minz);
+		                    tessellator.addVertex(last.getX() - minx - 0.0625, last.getY() - miny, last.getZ() - minz);
+		                tessellator.draw();
+		    		GL11.glPopMatrix();
+		            GL11.glPushMatrix();
+			            tessellator.startDrawingQuads();
+			                tessellator.setColorRGBA_F(1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))), 1F - ((float)(0.8*(q/pathLength))));
+			                tessellator.addVertex(last.getX() - minx, last.getY() - miny, last.getZ() - minz + 0.0625);
+			                tessellator.addVertex(vec.getX() - minx, vec.getY() - miny, vec.getZ() - minz + 0.0625);
+			                tessellator.addVertex(vec.getX() - minx, vec.getY() - miny, vec.getZ() - minz - 0.0625);
+			                tessellator.addVertex(last.getX() - minx, last.getY() - miny, last.getZ() - minz - 0.0625);
+			            tessellator.draw();
+					GL11.glPopMatrix();
                     
 			        GL11.glDisable(GL11.GL_BLEND);
 			        GL11.glEnable(GL11.GL_LIGHTING);

@@ -1,6 +1,6 @@
-package es.amadornes.modjam3.lib;
+package es.amadornes.transvoltz.lib;
 
-import es.amadornes.modjam3.item.ItemUpgrade;
+import es.amadornes.transvoltz.item.ItemUpgrade;
 
 public class Items {
 

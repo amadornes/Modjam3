@@ -1,5 +1,7 @@
-package es.amadornes.modjam3;
+package es.amadornes.transvoltz;
 
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.item.ItemStack;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
@@ -8,19 +10,26 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkMod;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.packet.PacketHandler;
-import es.amadornes.modjam3.proxy.CommonProxy;
+import es.amadornes.transvoltz.lib.Blocks;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.packet.PacketHandler;
+import es.amadornes.transvoltz.proxy.CommonProxy;
 
 @Mod(modid = ModInfo.MOD_ID, name = ModInfo.NAME, version = ModInfo.VERSION)
 @NetworkMod(clientSideRequired = true, serverSideRequired = false, channels = {ModInfo.CHANNEL}, packetHandler = PacketHandler.class)
-public class ModJam3 {
+public class Transvoltz {
 	
 	@Instance(ModInfo.MOD_ID)
-	public static ModJam3 inst;
+	public static Transvoltz inst;
 	
 	@SidedProxy(serverSide = ModInfo.COMMON_PROXY, clientSide = ModInfo.CLIENT_PROXY)
 	public static CommonProxy proxy;
+	
+	public static CreativeTabs tab = new CreativeTabs(CreativeTabs.getNextID(), ModInfo.MOD_ID){
+		public ItemStack getIconItemStack() {
+			return new ItemStack(Blocks.core, 1, 1);
+		};
+	};
 	
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent ev){
@@ -34,6 +43,8 @@ public class ModJam3 {
 		proxy.registerBlocks();
 		proxy.registerTileEntities();
 		proxy.registerItems();
+		
+		proxy.registerRecipes();
 		
 		proxy.registerLanguages();
 		

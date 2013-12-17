@@ -1,7 +1,7 @@
-package es.amadornes.modjam3.lib;
+package es.amadornes.transvoltz.lib;
 
-import es.amadornes.modjam3.block.BlockAntenna;
-import es.amadornes.modjam3.block.BlockCore;
+import es.amadornes.transvoltz.block.BlockAntenna;
+import es.amadornes.transvoltz.block.BlockCore;
 
 public class Blocks {
 

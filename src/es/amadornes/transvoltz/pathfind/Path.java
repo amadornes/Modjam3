@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.pathfind;
+package es.amadornes.transvoltz.pathfind;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,11 +6,13 @@ import java.util.List;
 
 public class Path {
 
-	private List<Vector3> steps;
+	private List<Vector3> steps = new ArrayList<Vector3>();
 	public List<Vector3> visited = new ArrayList<Vector3>();
 	
 	public Path(List<Vector3> steps) {
-		this.steps = steps;
+		for(Vector3 v : steps){
+			addStep(v);
+		}
 	}
 	
 	public double getLength(){

@@ -1,4 +1,4 @@
-package es.amadornes.modjam3.item;
+package es.amadornes.transvoltz.item;
 
 import java.util.List;
 
@@ -7,8 +7,10 @@ import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Icon;
-import es.amadornes.modjam3.lib.ModInfo;
-import es.amadornes.modjam3.tileentity.TileEntityCore.UpgradeType;
+import es.amadornes.transvoltz.Transvoltz;
+import es.amadornes.transvoltz.lib.ModInfo;
+import es.amadornes.transvoltz.tileentity.TileEntityCore;
+import es.amadornes.transvoltz.tileentity.TileEntityCore.UpgradeType;
 
 public class ItemUpgrade extends Item {
 	
@@ -17,6 +19,11 @@ public class ItemUpgrade extends Item {
 	public ItemUpgrade(int id) {
 		super(id);
 		setUnlocalizedName(ModInfo.MOD_ID + ".upgrade");
+	}
+	
+	@Override
+	public CreativeTabs getCreativeTab() {
+		return Transvoltz.tab;
 	}
 	
 	@Override
@@ -51,6 +58,14 @@ public class ItemUpgrade extends Item {
 	@Override
 	public String getUnlocalizedName(ItemStack is) {
 		return getUnlocalizedName() + "." + UpgradeType.getFromDamage(is.getItemDamage()).getIconName();
+	}
+	
+	@Override
+	public String getItemDisplayName(ItemStack is) {
+		if(TileEntityCore.UpgradeType.getFromDamage(is.getItemDamage()) != null){
+			return TileEntityCore.UpgradeType.getFromDamage(is.getItemDamage()).getDisplayName();
+		}
+		return "Empty upgrade";
 	}
 
 }
